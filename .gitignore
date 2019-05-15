@@ -1,0 +1,6 @@
+*.py[cod]
+.*.swp
+build/
+dist/
+modelmaker.egg-info
+__pycache__/
