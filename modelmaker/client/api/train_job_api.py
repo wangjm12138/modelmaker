@@ -193,12 +193,12 @@ class TrainJobApi(object):
 			header_params,
 			body=body,
 			auth_settings=auth_settings)
-	def stop_job(self, project_id, job_id, body, **kwargs):	
+	def stop_job(self, project_id, version_id, body, **kwargs):	
 		kwargs['_return_http_data_only'] = True
-		(data) = self.stop_job_version_with_http_info(project_id, job_id, body, **kwargs)  
+		(data) = self.stop_job_version_with_http_info(project_id, version_id, body, **kwargs)  
 		return data
 
-	def stop_job_version_with_http_info(self, project_id, job_id, body, **kwargs):  
+	def stop_job_version_with_http_info(self, project_id, version_id, body, **kwargs):  
 
 		header_params = {}
 		# HTTP header `Accept`
@@ -212,7 +212,7 @@ class TrainJobApi(object):
 		# Authentication setting
 		auth_settings = ['ApiTokenAuth']  
 		return self.api_client.call_api(
-			'/v1/train/%s/stop'%str(job_id), 'POST',
+			'/v1/train/%s/stop'%str(version_id), 'POST',
 			header_params,
 			body=body,
 			auth_settings=auth_settings)

@@ -31,7 +31,7 @@ class Predictor(object):
 		self.service_id = service_id
 		self.predictor_instance = PredictorApiAccountImpl(self.session, service_id)
 
-	def get_service_info(self, service_id = None):
+	def info(self, service_id = None):
 		""" Get the deployed model service information
 		Args:
 			session: Building interactions with Wangsu Cloud Service.
@@ -49,14 +49,14 @@ class Predictor(object):
 #		 """
 #		 return self.predictor_instance.predict(data, data_type)
 
-	def get_service_list(self):
+	def info_list(self):
 		"""
 		return User service list
 		"""
 		result = self.predictor_instance.get_service_list()
 		LOGGER.info(json.loads(result.data.decode('utf-8')))
 
-	def start_service(self, service_id=None):
+	def start(self, service_id=None):
 		""" change a service state.
 		Args:
 			node_id: node id
@@ -66,7 +66,7 @@ class Predictor(object):
 		result = self.predictor_instance.change_service_state('start', service_id=service_id)
 		LOGGER.info(json.loads(result.data.decode('utf-8')))
 
-	def stop_service(self, service_id=None):
+	def stop(self, service_id=None):
 		""" change a service state.
 		Args:
 			node_id: node id
@@ -76,14 +76,14 @@ class Predictor(object):
 		result = self.predictor_instance.change_service_state('stop', service_id=service_id)
 		LOGGER.info(json.loads(result.data.decode('utf-8')))
 
-	def delete_service(self, service_id=None):
+	def delete(self, service_id=None):
 		""" change a service state.
 		Args:
 			node_id: node id
 			action_body: Operate type, {start,stop, run}
 		return: Service stop or start tasks result.
 		"""
-		result = self.predictor_instance.delete_service(service_id=service_id)
+		result = self.predictor_instance.delete(service_id=service_id)
 		LOGGER.info(json.loads(result.data.decode('utf-8')))
 
 #	def update_service_config(self, service_id=None, **config_body):
@@ -231,11 +231,11 @@ class PredictorApiAccountImpl(PredictorApiBase):
 		body={}
 		return self.service_api.get_service_info(self.session.project_id, body=body, service_id=None)
 
-	def start_service(self, service_id=None):
+	def start(self, service_id=None):
 		result = self.change_service_state('start', service_id=None)	
 		print(json.loads(result.data.decode('utf-8')))
 
-	def stop_service(self, service_id=None):
+	def stop(self, service_id=None):
 		result = self.change_service_state('stop', service_id=None)	
 		print(json.loads(result.data.decode('utf-8')))
 
@@ -255,7 +255,7 @@ class PredictorApiAccountImpl(PredictorApiBase):
 		body = {}
 		return self.service_api.operate_a_service(self.session.project_id, body, service_id, action_body)
 
-	def delete_service(self, service_id=None):
+	def delete(self, service_id=None):
 		""" change a service state.
 		Args:
 			node_id: node id

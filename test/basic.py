@@ -36,4 +36,4 @@ basic_estimator.create_model(
 predictor_response = basic_estimator.deploy_predictor(
 						service_name  = "basic-predict",
 						service_type  = "ONLINE_SERVICE",
-                        service_models = [{"weight":100,"resourceId":500151,"instanceCount":1}])
+                        service_models = [{"weight":100,"resourceId":500550,"instanceCount":1}])

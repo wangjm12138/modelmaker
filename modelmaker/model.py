@@ -68,7 +68,7 @@ class Model(object):
 		self.service_id   = self.model_instance.service_id
 		return model_deploy_resp
 
-	def get_model_info(self, model_id=None):
+	def model_info(self, model_id=None):
 		"""
 		return model information list of the input model_id or the last created model
 		"""
@@ -86,33 +86,38 @@ class Model(object):
 		LOGGER.info(result)
 		return result
 
-	def get_preset_model(self):
+	def preset_model(self):
 
 		result = self.model_instance.get_preset_model()
 		result  = json.loads(result.data.decode('utf-8'))
 		LOGGER.info(result)
 		return result
 
-	def get_reasoning_instance_types(self):
+	def predict_machine(self):
 
-		result = self.model_instance.get_reasoning_instance_types()
+		result = self.model_instance.get_predict_instance_types()
 		result  = json.loads(result.data.decode('utf-8'))
 		LOGGER.info(result)
 		return result
 
-	def get_reasoning_framework_list(self):
+	def predict_framework(self):
 
-		result = self.model_instance.get_reasoning_framework_list()
+		result = self.model_instance.get_predict_framework_list()
 		result  = json.loads(result.data.decode('utf-8'))
 		LOGGER.info(result)
 		return result
 
-	def delete_model(self, model_id = None):
+	def destory_model(self, model_id = None):
 
 		result = self.model_instance.delete_model(model_id = model_id)
 		LOGGER.info(json.loads(result.data.decode('utf-8')))
 
-	def delete_model_version(self, model_version_id = None):
+	def destory_model_version(self, model_version_id = None):
+		
+		result  = self.model_instance.delete_model_version(model_version_id = model_version_id)
+		LOGGER.info(json.loads(result.data.decode('utf-8')))
+
+	def delete_model(self, model_version_id = None):
 		
 		result  = self.model_instance.delete_model_version(model_version_id = model_version_id)
 		LOGGER.info(json.loads(result.data.decode('utf-8')))
@@ -205,7 +210,7 @@ class ModelApiBase(with_metaclass(ABCMeta, object)):
 				_config['version'] = model_params['model_version']
 				_config['frameworkId'] = model_params['model_framework']
 				_config['modelPath'] = model_params['model_path']
-				result = self.get_reasoning_framework_list()
+				result = self.get_predict_framework_list()
 				result = json.loads(result.data.decode('utf-8'))
 				frameworkId_list = [ item['id'] for item in result['frameWorks']]
 				if _config['frameworkId'] not in frameworkId_list:
@@ -268,7 +273,7 @@ class ModelApiBase(with_metaclass(ABCMeta, object)):
 		_config['type'] = service_params['service_type']
 		_config['serviceModels'] = service_params['service_models']
 
-		result = self.get_reasoning_instance_types()
+		result = self.get_predict_instance_types()
 		result = json.loads(result.data.decode('utf-8'))
 		resourceId_list = [ item['id'] for item in result['resources']]
 		if _config['serviceModels'][0]['resourceId'] not in resourceId_list:
@@ -530,19 +535,19 @@ class ModelApiAccountImpl(ModelApiBase):
 #					print('Delete the model %s endpoint successfully.' % model_id)
 #					break
 
-	def get_reasoning_instance_types(self):
+	def get_predict_instance_types(self):
 		""" get_preset_model
 		"""
 
 		body={}
-		return self.spec_api.list_spec(project_id=self.session.project_id,body=body,env="REASONING")
+		return self.spec_api.list_spec(project_id=self.session.project_id,body=body,env="PREDICT")
 
-	def get_reasoning_framework_list(self):
+	def get_predict_framework_list(self):
 		""" get_preset_model
 		"""
 
 		body={}
-		return self.framework_api.get_framework_id(project_id=self.session.project_id, body=body, env="REASONING")
+		return self.framework_api.get_framework_id(project_id=self.session.project_id, body=body, env="PREDICT")
 
 	def get_preset_model(self):
 		""" get_preset_model

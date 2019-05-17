@@ -62,7 +62,7 @@ class Session(object):
 		else:
 			with open(self.config_file) as f:
 				config_json = json.load(f)
-				if config_json.get('iam_config') and config_json['iam_config'].get('host_base') and config_json['iam_config'].get('verify_ssl'):
+				if config_json.get('iam_config') and config_json['iam_config'].get('host_base') and config_json['iam_config'].get('verify_ssl') != None:
 					self.host_base = config_json['iam_config']['host_base']
 					self.verify_ssl = config_json['iam_config']['verify_ssl']
 					self.region = config_json['iam_config']['region']

@@ -89,8 +89,8 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 					count_init = count_init + 1
 					#LOGGER.info("Job [ %s ] is %s" % (job_name, "starting"))
 					time.sleep(3)
-				elif status == 'STOPING':
-					LOGGER.info("Job [ %s ] is %s" % (job_name, "stoping"))
+				elif status == 'STOPPING':
+					LOGGER.info("Job [ %s ] is %s" % (job_name, "stoping..."))
 					time.sleep(3)
 				elif status == 'DOWNLOAD_DATA':
 					if count_down_data == 0:
@@ -129,50 +129,50 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		print(state + '|' + '>>>>>>' * count_init+'|',end='\r')
 
 	@classmethod
-	def get_preset_model(cls, modelmaker_session):
+	def preset_model(cls, modelmaker_session):
 		result = _TrainingJob.get_preset_model(modelmaker_session)
 		LOGGER.info(result)
 		return result
 
 	@classmethod
-	def get_preset_algorithm(cls, modelmaker_session):
+	def preset_algorithm(cls, modelmaker_session):
 		result = _TrainingJob.get_preset_algorithm(modelmaker_session)
 		LOGGER.info(result)
 		return result
 
 	@classmethod
-	def get_train_framework_list(cls, modelmaker_session):
+	def train_framework(cls, modelmaker_session):
 		result = _TrainingJob.get_framework_list(modelmaker_session,'TRAIN')
 		LOGGER.info(result)
 		return result
 
 	@classmethod
-	def get_development_framework_list(cls, modelmaker_session):
+	def development_framework(cls, modelmaker_session):
 		result = _TrainingJob.get_framework_list(modelmaker_session,'DEVELOPMENT')
 		LOGGER.info(result)
 		return result
 
 	@classmethod
-	def get_reasoning_framework_list(cls, modelmaker_session):
-		result = _TrainingJob.get_framework_list(modelmaker_session,'REASONING')
+	def predict_framework(cls, modelmaker_session):
+		result = _TrainingJob.get_framework_list(modelmaker_session,'PREDICT')
 		LOGGER.info(result)
 		return result
 
 	@classmethod
-	def get_train_instance_types(cls, modelmaker_session):
+	def train_machine(cls, modelmaker_session):
 		result = _TrainingJob.get_instance_types(modelmaker_session,'TRAIN')
 		LOGGER.info(result)
 		return result
 
 	@classmethod
-	def get_development_instance_types(cls, modelmaker_session):
+	def development_machine(cls, modelmaker_session):
 		result = _TrainingJob.get_instance_types(modelmaker_session,'DEVELOPMENT')
 		LOGGER.info(result)
 		return result
 
 	@classmethod
-	def get_reasoning_instance_types(cls, modelmaker_session):
-		result = _TrainingJob.get_instance_types(modelmaker_session,'REASONING')
+	def predict_machine(cls, modelmaker_session):
+		result = _TrainingJob.get_instance_types(modelmaker_session,'PREDICT')
 		LOGGER.info(result)
 		return result
 
@@ -181,7 +181,7 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		return _TrainingJob.get_spec_list(modelmaker_session,env)
 
 	@classmethod
-	def get_job_version_info(cls, modelmaker_session, version_id):
+	def version_info(cls, modelmaker_session, version_id):
 		result =  _TrainingJob.get_job_version_info(modelmaker_session, version_id)
 		LOGGER.info(result)
 		return result
@@ -189,26 +189,38 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 	@classmethod
 	def get_job_version_status(cls, modelmaker_session, version_id):
 		return  _TrainingJob.get_job_version_info(modelmaker_session, version_id)
-	
+
 	@classmethod
-	def get_job_info(cls, modelmaker_session, job_id=None):
+	def Info(cls, modelmaker_session, job_id=None):
 		result = _TrainingJob.get_job_info(modelmaker_session, job_id=job_id)
 		LOGGER.info(result)
 		return result
 
-	def stop_job(self, job_id=None):
-		if job_id is None:
-				if hasattr(self,'job_id'):
-					job_id = self.job_id
+	def info(self, version_id=None):
+		if version_id is None:
+			if hasattr(self,'version_id'):
+				version_id = self.version_id
+			else:
+				LOGGER.error("please use fit() method first or version_id is need!!!")
+				return
+		modelmaker_session = self.modelmaker_session
+		result =  _TrainingJob.get_job_version_info(modelmaker_session, version_id)
+		LOGGER.info(result)
+		return result
+
+	def stop(self, version_id=None):
+		if version_id is None:
+				if hasattr(self,'version_id'):
+					version_id = self.version_id
 				else:
 					LOGGER.error("please use fit() method first or version_id is need!!!")
 					return
 		modelmaker_session = self.modelmaker_session
-		result = _TrainingJob.stop_job(modelmaker_session, job_id)
+		result = _TrainingJob.stop_job(modelmaker_session, version_id)
 		LOGGER.info(result)
 		return result
 
-	def delete_job(self, version_id=None):
+	def delete(self, version_id=None):
 		if version_id is None:
 				if hasattr(self,'version_id'):
 					version_id = self.version_id
@@ -241,7 +253,7 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		result =  _TrainingJob.get_job_log(self, version_id, log_id)
 		return result
 
-	def get_job_log(self, version_id, log_id):
+	def log(self, version_id, log_id):
 		if version_id is None:
 			if hasattr(self,'version_id'):
 				version_id = self.version_id
@@ -257,7 +269,7 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		result =  _TrainingJob.get_job_output(self, version_id)
 		return result
 
-	def get_job_output(self, version_id=None):
+	def artifacts(self, version_id=None):
 		if version_id is None:
 			if hasattr(self,'version_id'):
 				version_id = self.version_id
@@ -269,7 +281,7 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		LOGGER.info(result)
 		return result
 
-	def get_resource_monitor(self, version_id=None):
+	def resource(self, version_id=None):
 		if version_id is None:
 			if hasattr(self,'version_id'):
 				version_id = self.version_id
@@ -281,7 +293,7 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		LOGGER.info(result)
 		return result
 
-	def get_performance_monitor(self, version_id=None):
+	def metric(self, version_id=None):
 		if version_id is None:
 			if hasattr(self,'version_id'):
 				version_id = self.version_id
@@ -292,25 +304,44 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		LOGGER.info(result)
 		return result
 
-	def create_model(self, **kwargs):
+	def create_model(self, version_id=None, **kwargs):
 		""" creating model interface
 		:param kwargs: Create model body params
 		:return: model instance
 		"""
+		if version_id is None:
+			if hasattr(self,'version_id'):
+				version_id = self.version_id
+			else:
+				LOGGER.error("please use fit() method first or version_id is need!!!")
+				return
 
+		result = self.get_job_version_status(self.modelmaker_session, version_id=version_id)
+		if result.get('errorCode'):
+			raise Exception("get train job info error!")
+		status = result['status']
+		if status == 'FINISH':
 #		if kwargs.get('model_name') == None and self.model_name is None:
 #			ISOTIMEFORMAT = '%m%d-%H%M%S'
 #			beijing_date = (datetime.now()+ timedelta(hours=8)).strftime(ISOTIMEFORMAT)
 #			kwargs['model_name'] = self.job_name + '-' + beijing_date
-		if kwargs.get('model_path') == None:
-			kwargs['model_path'] = self.output_path
-		if kwargs.get('model_framework_type') == None:
-			if self.framework_type == "PRESET_ALGORITHM":
-				kwargs['model_framework_type'] = "PRESET_MODEL"
-			else:
-				kwargs['model_framework_type'] = self.framework_type
-		create_model_resp = self.model_api.create_model(**kwargs)
-		return self.model_api
+			if kwargs.get('model_path') == None:
+				if self.output_path == None:
+					raise ValueError('model_path is None!')
+				else:
+					kwargs['model_path'] = self.output_path
+			if kwargs.get('model_framework_type') == None:
+				if self.framework_type == None:
+					raise ValueError('model_framework_type is None!')
+				else:
+					if self.framework_type == "PRESET_ALGORITHM":
+						kwargs['model_framework_type'] = "PRESET_MODEL"
+					else:
+						kwargs['model_framework_type'] = self.framework_type
+			create_model_resp = self.model_api.create_model(**kwargs)
+			return self.model_api
+		else:
+			raise Exception("train job is not finish!")
 
 	def deploy_predictor(self, **kwargs):
 		"""Deploying model service interface
@@ -632,14 +663,14 @@ class _TrainingJob():
 		return data
 
 	@classmethod
-	def stop_job(cls, modelmaker_session, job_id):
+	def stop_job(cls, modelmaker_session, version_id):
 		project_id = modelmaker_session.project_id
 		client = modelmaker_session.client
 
 		body={}
 		if modelmaker_session.auth == 'token':
 			train_job_api = TrainJobApi(modelmaker_session.client)
-			res = train_job_api.stop_job(project_id=project_id, job_id=job_id, body=body)
+			res = train_job_api.stop_job(project_id=project_id, version_id=version_id, body=body)
 			data = json.loads(res.data.decode('utf-8'))
 		else:
 			data = 1
