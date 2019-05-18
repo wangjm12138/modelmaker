@@ -75,18 +75,21 @@ predictor_instance = custom_estimator.deploy_predictor(
 当Estimator实例化后可以调用相应的实例方法
 ```
 """//查询训练版本运行监控"""
-custom_estimator.get_resource_monitor()
+custom_estimator.resource()
+"""//查询训练版本运行详情"""
+custom_estimator.info()
 """//查询训练版本指标监控"""
-custom_estimator.get_performance_monitor()
+custom_estimator.metric()
 """//查询训练版本日志，需要指定log_id"""
-custom_estimator.get_job_log(log_id=0)
+custom_estimator.log(log_id=0)
 """//查询训练版本输出"""
-custom_estimator.get_job_output()
+custom_estimator.artifacts()
 """//停止训练"""
-custom_estimator.stop_job()
+custom_estimator.stop()
 """//删除训练"""
-custom_estimator.delete_job()
+custom_estimator.delete()
 ```
+
 3. 查询资源规格列表
 ```
 #-*-coding:utf-8-*-
@@ -97,53 +100,102 @@ session = Session()
 #session = Session(username="cdy",password="cyd@Pass1",iam_server="172.16.14.201:9048/mmr")
 
 """//获取训练机器列表"""
-#Estimator.get_train_instance_types(session)
+#Estimator.train_machine(session)
 """//获取开发机器列表"""
-#Estimator.get_development_instance_types(session)
+#Estimator.development_machine(session)
 """//获取部署机器列表"""
-#Estimator.get_reasoning_instance_types(session)
+#Estimator.predict_machine(session)
 
 ```
 其中第一步创建训练任务的train_instance_type的id值需在Estimator.get_train_instance_types获得的列表中，train_instance_count最大支持10，volume_size最大也只支持10。
 4. 查询预置算法列表
 ```
 """获取预置算法"""
-#Estimator.get_preset_algorithm(session)
+#Estimator.preset_algorithm(session)
 ```
 当创建训练任务的类型是framework_type='PRESET_ALGORITHM'需在此查询的列表中
 5. 查询基础框架训练列表
 ```
 """//获取基础框架训练列表"""
-#Estimator.get_train_framework_list(session)
+#Estimator.train_framework(session)
 ```
 当创建训练任务的类型是framework_type='BASIC_FRAMEWORK'需在此查询的列表中
 6. 查询预置模型列表
 ```
 """获取预置模型"""
-#Estimator.get_preset_model(session)
+#Estimator.preset_model(session)
 ```
 当创建模型model_framework_type="PRESET_MODEL"的类型是需在此查询的列表中
 7. 查询基础框架模型部署列表
 ```
 """//获取基础框架模型部署列表"""
-#Estimator.get_reasoning_framework_list(session)
+#Estimator.predict_framework(session)
 ```
 当创建模型model_framework_type  = 'BASIC_FRAMEWORK'的类型是需在此查询的列表中
 8. 其他
 ```
 """//获取训练全部作业列表"""
-#Estimator.get_job_info(session)
+#Estimator.Info(session)
 """//指定训练作业id，获取训练作业详情,id需存在!!!!，不然报错"""
-#Estimator.get_job_info(session,job_id=502408)
+#Estimator.Info(session,job_id=502408)
 """//指定训练作业版本id，获取训练作业版本详情,version_id需存在!!!，不然报错"""
-#Estimator.get_job_version_info(session,version_id=12345)
+#Estimator.version_info(session,version_id=12345)
 """------------训练删除"""
 """//指定训练作业id，删除全部的版本,id需存在!!!!，不然报错"""
 #Estimator.destory_job(session,job_id=12345)
 """//指定训练作业版本id，删除该版本,id需存在!!!!，不然报错"""
 #Estimator.destory_job_version(session,version_id=502758)
 ```
-### 模型管理
+9. 训练参数列表  
+
+硬件部分均为必填
+
+参数名 | 是否必填 | 格式 | 样式
+---|--- |--- |---
+train_instance_type | 是 | 整型 | train_instance_type=500550
+train_instance_count | 是 （<10）| 整型 | train_instance_count=1
+volume_size | 是（<10）| 整型 | volume_size=1
+
+预置算法：
+
+训练参数名 | 是否必填 | 格式 | 样式
+---|--- |--- |--- 
+algorithm | 是 | 整型 | algorithm=500000
+output_path | 是 | 字符串 | output_path="s3://aiteam/wjm-test/V0003/"
+framework_type | 是 | 字符串 | framework_type='PRESET_ALGORITHM'
+max_runtime | 否 | 整型 | max_runtime=24*3600
+hyperparameters | 否 | 字典 | hyperparameters={"a":10,"b":29}
+init_model | 否 | 字符串 | init_model="s3://fdasf"
+
+基础框架：
+
+训练参数名 | 是否必填 | 格式 | 样式
+---|---|--- |---
+code_dir | 否（与git_info二选一必填）| 字符串 | code_dir="s3://aiteam/wjm-test/V0003/"
+git_info | 否（与code_dir二选一必填）| 字典 | git_info={"username":XXX,"password":"xxx"}
+framework | 是| 整型 | framework=500100
+framework_type | 是| 字符串 | framework_type='BASIC_FRAMEWORK'
+boot_file | 是| 字符串 | boot_file="train.py"
+output_path | 是| 字符串 | output_path="s3://aiteam/wjm-test/V0003/"
+input_files | 否| 列表 | input_files=["a.txt","b.txt"]
+monitors | 否| 列表 | monitors=[{r'name':r'accuracy',r'regular':r'.*?accuracy\s=\s(.*)',r'sample':r'.*?loss\s=\s(.*)\s,\sstep\s=\s(.*)'}]
+hyperparameters | 否| 字典 | hyperparameters={"a":10,"b":29}
+max_runtime | 否| 整型 | max_runtime=24*3600
+
+自定义：
+
+训练参数名 | 是否必填| 格式 | 样式
+---|---|--- |---
+code_dir | 否（与git_info二选一必填）| 字符串 | code_dir="s3://aiteam/wjm-test/V0003/"
+git_info | 否（与code_dir二选一必填）| 字典 | git_info={"username":XXX,"password":"xxx"}
+framework_type | 是| 整型 | framework_type='CUSTOM'
+user_image_url | 是| 字符串| user_image_url='172.16.14.172/test/custom:v1.0'
+output_path | 是| 字符串 | output_path="s3://aiteam/wjm-test/V0003/"
+user_command | 否| 字符串 | user_command="/bin/bash"
+user_command_args | 否| 字符串| user_command_args="/home/test/start.sh"
+env | 否| 列表 | env=[{"env1":xxx,"evn2":sss}]
+monitors | 否| 列表 | monitors=[{r'name':r'accuracy',r'regular':r'.*?accuracy\s=\s(.*)',r'sample':r'.*?loss\s=\s(.*)\s,\sstep\s=\s(.*)'}]
+max_runtime | 否| 整型 | max_runtime=24*3600
 1. 创建模型
 ```
 #-*-coding:utf-8-*-
@@ -172,16 +224,16 @@ redictor_response = basic_estimator.deploy_predictor(
 3. 查询预置模型/基础框架模型列表，以及推理机器类型，这部分在作业管理也可以查询得到，属于重复内容
 ```
 """//获取预置模型列表"""
-#model_instance.get_preset_model()
+#model_instance.preset_model()
 """//获取基础框架模型列表"""
-#model_instance.get_reasoning_framework_list()
+#model_instance.predict_framework()
 """//获取推理机器类型"""
-#model_instance.get_reasoning_instance_types()
+#model_instance.predict_machine()
 ```
 4. 查询模型列表，详情，模型id，模型版本id，服务id
 ```
 """//获取全部模型"""
-#model_instance.get_model_info()
+#model_instance.model_info()
 """//指定模型id，获取模型详情,id需存在!!!!，不然报错"""
 #model_instance.get_model_info(model_id=43452)
 """//返回service_id"""
@@ -194,12 +246,63 @@ redictor_response = basic_estimator.deploy_predictor(
 5. 删除
 ```
 """//指定模型id,删除,id需存在"""
-#model_instance.delete_model(model_id=222)
+#model_instance.destory_model(model_id=501654)
+#model_instance.destory_model_version(model_version_id=502106)
 """//指定模型版本id,删除,id需存在，如果create_model已经创建可省略id"""
-#model_instance.delete_model_version(model_version_id=22)
+#model_instance.delete_model(model_version_id=22)
 """//指定服务id,删除,id需存在"""
 #model_instance.delete_service(service_id=24)
 ```
+6. 模型参数列表
+
+创建模型三种框架参数列表：
+
+预置算法参数列表
+
+训练参数名 | 是否必填 | 格式 | 样式
+---|---|---|---
+model_framework_type | 是 | 字符串 | model_framework_type="PRESET_MODEL"
+model_name | 是 | 字符串 | model_name="preset1-model"
+model_version | 是 | 字符串 | model_version="1.1.1.2"
+model_framework | 是 | 整型 | model_framework=500000
+model_path | 是 | 字符串 | model_path="s3://aiteam/image-class/output/1.4/"
+ 
+基础框架参数列表
+
+训练参数名 | 是否必填 | 格式 | 样式
+---|--- | --- | ---
+model_framework_type | 是 | 字符串 | model_framework_type='BASIC_FRAMEWORK'
+model_name | 是 | 字符串 | model_name="basic-model"
+model_version | 是  | 字符串 | model_version = "v1.12.1"
+model_framework | 是  | 整型 | model_framework=500150
+model_path | 是  | 字符串 | model_path="s3://aiteam/wjm_output/V0001/"
+model_code_dir | 否  | 字符串 | model_code_dir="s3://aiteam/mnist/code/"
+model_git_info | 否  | 列表 | model_git_info=[{"username":"xxx","password":"xxx"}]
+model_boot_file | 否 | 字符串 | model_boot_file="train.py"
+model_call_specs | 否 | 字符串 | model_call_specs="xxxx"
+
+自定义参数列表
+
+训练参数名 | 是否必填 | 格式 | 样式
+--- |--- | --- | ---
+model_framework_type | 是 | 字符串 | model_framework_type="CUSTOM"
+model_name | 是 | 字符串 | model_name="XXX"
+model_version | 是 | 字符串 | model_version="v1.12.1"
+model_mirrorUrl | 是 | 字符串 | model_mirrorUrl="docker:/sdf"
+model_path | 否 | 字符串 | model_path="s3:/input/s"
+
+创建部署参数列表
+
+训练参数名 | 是否必填 | 格式 | 样式
+---|--- | --- | ---
+service_name | 是 | 字符串 | service_name="basic-predict"
+service_type | 是 | 字符串 | service_type="ONLINE_SERVICE"
+service_models | 是 | 列表(字典) | service_models=[{"weight":100,"resourceId":500151,"instanceCount":1}]
+
+
+备注：service_type只能ONLINE_SERVICE
+service_models列表包含是字典，且必须包含weitht，resourceId，instanceCount
+
 ### 服务管理
 1. 关联服务id
 ```
@@ -208,14 +311,14 @@ predictor_instance = Predictor(session,service_id=1000) #
 2. 服务相关操作
 ```
 """//获取服务详情"""
-#predictor_instance.get_service_info()
+#predictor_instance.info()
 """//获取服务列表"""
-#predictor_instance.get_service_list()
+#predictor_instance.info_list()
 """//启动服务"""
-#predictor_instance.start_service()
+#predictor_instance.start()
 """//停止服务"""
-#predictor_instance.stop_service()
+#predictor_instance.stop()
 """//删除服务"""
-#predictor_instance.delete_service()
+#predictor_instance.delete()
 
 ```
