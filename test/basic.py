@@ -3,18 +3,18 @@ from modelmaker.session import Session
 from modelmaker.estimator import Estimator
 from modelmaker.model import Model
 from modelmaker.predictor import Predictor
-
 session = Session()
+#session = Session(username="xxx",password="xxxx",host_base="xxxxx", region="xxxx", bucket="xxxx")
 
 #/基础镜像/#
-job_name="basic-train"
+job_name="wjm-basic-train"
 basic_estimator = Estimator(
                       modelmaker_session=session,
 					  #/train information/#
                       framework=500100,                                               # AI引擎版本?
                       framework_type='BASIC_FRAMEWORK',                             # AI引擎版本?
 					  #/train code/#
-					  code_dir="s3://aiteam/mnist/code/",                          # 训练代码目录,s3路径?
+					  code_dir="/home/wangjm/git/train.py",                          # 训练代码目录,s3路径?
                       boot_file="train.py",                						   # 训练启动脚本目录,s3路径？
 					  #/output/
 					  output_path="s3://aiteam/wjm_output/",			          # 训练输出位置，s3路径？

@@ -117,8 +117,7 @@ class ApiClient(object):
 				LOGGER.info("Refresh the token,because token is invalid or out of indate")
 				token = authorize_by_token(username=self.configuration.username,
 													password=self.configuration.password,
-													endpoint=self.configuration.host,
-													method=self.configuration.method)
+													endpoint=self.configuration.host)
 				self.set_default_header("Auth-Token", token)
 				http_reponse = self.__call_api(resource_path, method,
 								header_params, body, auth_settings)

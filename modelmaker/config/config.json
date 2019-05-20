@@ -1,10 +1,11 @@
 {
 	"iam_config": {
-		"password": "cyd@Pass1",
-		"host_base": "http://172.16.14.201:9048/mmr",
+		"username": "xxxxx",
+		"password": "xxxxx",
+		"host_base": "https://mmr.wangsucloud.com:9948/mmr",
 		"region": "js01",
-		"username": "cdy",
-		"verify_ssl": "false",
-		"s3_protocol": "http"
+		"verify_ssl": false,
+		"s3_protocol": "http",
+		"bucket": "aiteam"
 	}
 }

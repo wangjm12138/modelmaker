@@ -3,15 +3,14 @@ from modelmaker.session import Session
 from modelmaker.estimator import Estimator
 from modelmaker.model import Model
 from modelmaker.predictor import Predictor
-#import sys
-session = Session(username="cdy",password="cyd@Pass1",iam_server="http://172.16.14.201:9048/mmr")
-#session = Session()
+#session = Session(username="xxx",password="xxxx",host_base="xxxxx", region="xxxx", bucket="xxxx")
+session = Session()
 ##/api 部分/
 
 
 ##===================Esitmator【类方法】=======================
 ##//获取预置模型
-#Estimator.preset_model(session)
+Estimator.preset_model(session)
 ###//获取预置算法
 #Estimator.preset_algorithm(session)
 ###//获取训练框架列表

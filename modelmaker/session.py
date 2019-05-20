@@ -8,6 +8,7 @@ from .config.auth import authorize_by_token
 from .config.auth import get_temporary_aksk_without_commission
 from .config.config import create_client
 from .util.s3_util import WCS
+import pdb
 logging.basicConfig()
 LOGGER = logging.getLogger('modelmaker-sdk/session')
 MODELMAKER_CONFIG = os.getenv("MODELMAKER_CONFIG", "~/.modelmaker/config.json") #cloud
@@ -23,73 +24,119 @@ class Session(object):
 	such as iam auth, operation in WSS3.
 
 	"""
-	def __init__(self, config_file=None, username=None, password=None, iam_server=None, project_id=None,bucket=None):
+	def __init__(self, config_file=None, username=None, password=None, host_base=None, project_id=None, region=None, bucket=None):
 		"""Initialize a SageMaker ``Session``.
 
 		Args:
 			username : Wangsu cloud ai username.
 			password : Wangsu cloud ai password.
-			iam_server : Wangsu cloud api server domain.
-
+			host_base : Wangsu cloud api server domain.
+			region : Wangsu cloud api server domain.
 		"""
 		ip_pattern = r"\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3}"
 		if config_file:
 			self.config_file = config_file
 		else:
 			self.config_file = os.path.expanduser(MODELMAKER_CONFIG)
-		
+		#-----------------bucket-----------------	
 		self.bucket=None
 		if bucket:
 			if bucket.endswith('/') == False:
 				self.bucket=bucket+"/"
 		else:
-			LOGGER.warning("The bucket is not set!!!")
+			if os.path.exists(self.config_file):
+				with open(self.config_file) as f:
+					config_json = json.load(f)
+					if config_json.get('iam_config') and config_json['iam_config'].get('bucket'):
+						self.bucket = config_json['iam_config']['bucket']
+						if self.bucket.endswith('/') == False:
+							self.bucket=self.bucket+"/"
+					else:
+						LOGGER.warning("The bucket is not set!!!")
+			else:
+				LOGGER.warning("The bucket is not set!!!")
 
+		#-----------------username password-----------------	
 		if username and password:
 			self.username = username
 			self.password = password
+		elif username == None and password == None:
+			if os.path.exists(self.config_file):
+				with open(self.config_file) as f:
+					config_json = json.load(f)
+					if config_json.get('iam_config') and config_json['iam_config'].get('username') and config_json['iam_config'].get('password'):
+						self.username = config_json['iam_config']['username']
+						self.password = config_json['iam_config']['password']
+					else:
+						raise ValueError("username/password must be set in session(username=xxx,password=xxx) or in config file")
+			else:
+				raise ValueError("username/password must be set in session(username=xxx,password=xxx) or in config file")
 		else:
-			with open(self.config_file) as f:
-				config_json = json.load(f)
-				if config_json.get('iam_config') and config_json['iam_config'].get('username') and config_json['iam_config'].get('password'):
-					self.username = config_json['iam_config']['username']
-					self.password = config_json['iam_config']['password']
-				else:
-					raise ValueError("json fomat is: {'iam_config':{'username':xxx,'password':xxx,'host_base':xxx,'verify_ssl':xxx,'region':xxx}}")
+			raise ValueError("username/password must be set in session(username=xxx,password=xxx) or in config file")
 
 		self.s3_protocol = "https"
-		self.verify_ssl = "false"
-		if iam_server:
-			if iam_server.startswith("https://") == False and iam_server.startswith("http://") == False:
-				raise ValueError('iam_server must start with http:// or https://')
+		self.verify_ssl = False
+		self.region = "js01"
+		self.host_base = "https://mmr.wangsucloud.com:9948/mmr"
+		self.iam_server = None
+		#-----------------host_base-----------------	
+		if host_base:
+			if host_base.startswith("https://") == False and host_base.startswith("http://") == False:
+				raise ValueError('host_base must start with http:// or https://')
 			else:
-				self.iam_server = iam_server
-		elif "IAM_SERVER" in os.environ:
-			self.iam_server = os.environ["IAM_SERVER"]
+				self.host_base = host_base
 		else:
+			if os.path.exists(self.config_file):
+				with open(self.config_file) as f:
+					config_json = json.load(f)
+					if config_json.get('iam_config') and config_json['iam_config'].get('host_base'):
+						self.host_base = config_json['iam_config']['host_base']
+						if self.host_base.startswith("http://") == False and self.host_base.startswith("https://") == False:
+							raise ValueError('%s [host_base] must start with http:// or https://'%(self.config_file))
+					else:
+						LOGGER.warning("host_base set default:%s"%self.host_base)
+			else:
+				LOGGER.warning("host_base set default:%s"%self.host_base)
+		
+		#-----------------region-----------------	
+		if region:
+			self.region = region
+		else:
+			if os.path.exists(self.config_file):
+				with open(self.config_file) as f:
+					config_json = json.load(f)
+					if config_json.get('iam_config') and config_json['iam_config'].get('region'):
+						self.region = config_json['iam_config']['region']
+					else:
+						LOGGER.warning("region set default:%s"%self.region)
+			else:
+				LOGGER.warning("region set default:%s"%self.region)
+		
+		if self.host_base and self.region:
+			pattern  = re.compile(ip_pattern)
+			m = pattern.findall(self.host_base)
+			if m:
+				self.iam_server = self.host_base
+			else:
+				split_domain = self.host_base.split("://")
+				self.iam_server = "{procol}://{region}{domain}".format(procol=split_domain[0],region=self.region,domain=split_domain[1])
+
+		#-----------------verify_ssl,s3_protocol-----------------	
+		if os.path.exists(self.config_file):
 			with open(self.config_file) as f:
 				config_json = json.load(f)
-				if config_json.get('iam_config') and config_json['iam_config'].get('host_base') and config_json['iam_config'].get('verify_ssl') != None:
-					self.host_base = config_json['iam_config']['host_base']
+				if config_json.get('iam_config') and config_json['iam_config'].get('verify_ssl') != None:
 					self.verify_ssl = config_json['iam_config']['verify_ssl']
-					self.region = config_json['iam_config']['region']
 				else:
-					raise ValueError("json fomat is: {'iam_config':{'username':xxx,'password':xxx,'host_base':xxx,'verify_ssl':xxx,'region':xxx}}")
-				if config_json['iam_config'].get('s3_protocol'):
+					LOGGER.warning("verify_ssl set default:%s"%self.verify_ssl)
+				if config_json.get('iam_config') and config_json['iam_config'].get('s3_protocol'):
 					self.s3_protocol = config_json['iam_config']['s3_protocol']
-				if self.host_base.startswith("http://") == False and self.host_base.startswith("https://") == False:
-					raise ValueError('host_base must start with http:// or https://')
 				else:
-					pattern  = re.compile(ip_pattern)
-					m = pattern.findall(self.host_base)
-					if m:
-						self.iam_server = self.host_base
-					else:
-						split_domain = self.host_base.split("://")
-						self.iam_server = "{procol}://{region}{domain}".format(procol=split_domain[0],region=self.region,domain=split_domain[1])
+					LOGGER.warning("s3_protocol set default:%s"%self.s3_protocol)
 					
 
-		LOGGER.debug({'username':self.username, 'password':self.password, 'iam_server':self.iam_server})
+		LOGGER.info({'username':self.username, 'password':self.password, 'iam_server':self.iam_server, 'bucket':self.bucket})
+		#pdb.set_trace()
 		if self.username and self.password and self.iam_server:
 				try:
 					token = authorize_by_token(username=self.username,

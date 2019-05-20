@@ -4,9 +4,10 @@ from modelmaker.estimator import Estimator
 from modelmaker.model import Model
 from modelmaker.predictor import Predictor
 session = Session()
+#session = Session(username="xxx",password="xxxx",host_base="xxxxx", region="xxxx", bucket="xxxx")
 
 #/预置算法/#
-job_name="preset-train"
+job_name="wjm-preset-train2"
 preset_estimator = Estimator(
                       modelmaker_session=session,
 					  #/train information/#

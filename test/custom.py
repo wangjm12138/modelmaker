@@ -6,7 +6,7 @@ from modelmaker.model import Model
 from modelmaker.predictor import Predictor
 
 session = Session()
-#session = Session(username="cdy", password="cyd@Pass1", iam_server="http://172.16.14.201:9048/mmr")
+#session = Session(username="xxx",password="xxxx",host_base="xxxxx", region="xxxx", bucket="xxxx")
 
 #####/自定义镜像/#
 job_name="wjm-custom-train4"

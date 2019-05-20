@@ -4,8 +4,8 @@ from modelmaker.estimator import Estimator
 from modelmaker.model import Model
 #from modelmaker.predictor import Predictor
 
-#session = Session()
-session = Session(username="cdy",password="cyd@Pass1",iam_server="172.16.14.201:9048/mmr")
+session = Session()
+#session = Session(username="xxx",password="xxxx",host_base="xxxxx", region="xxxx", bucket="xxxx")
 #session = Session(method="https")#31.5
 #/s3 api/
 #base_bucket_path="s3://aiteam"
