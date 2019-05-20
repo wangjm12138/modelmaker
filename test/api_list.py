@@ -1,14 +1,11 @@
 #-*-coding:utf-8-*-
-import sys
-print(sys.path)
 from modelmaker.session import Session
 from modelmaker.estimator import Estimator
 from modelmaker.model import Model
 from modelmaker.predictor import Predictor
 #import sys
-print(sys.path)
-#session = Session(username="cdy",password="cyd@Pass1",iam_server="http://172.16.14.201:9048/mmr")
-session = Session()
+session = Session(username="cdy",password="cyd@Pass1",iam_server="http://172.16.14.201:9048/mmr")
+#session = Session()
 ##/api 部分/
 
 
@@ -24,11 +21,11 @@ session = Session()
 ###//获取部署框架列表
 #Estimator.predict_framework(session)
 ###//获取训练机器列表
-Estimator.train_machine(session)
+#Estimator.train_machine(session)
 ###//获取开发机器列表
 #Estimator.development_machine(session)
 ###//获取部署机器列表
-Estimator.predict_machine(session)
+#Estimator.predict_machine(session)
 #------------训练详情
 ##//获取训练全部作业列表
 #Estimator.Info(session)

@@ -15,7 +15,7 @@ logging.basicConfig()
 LOGGER = logging.getLogger('modelmaker-sdk/Estimator')
 LOGGER_LEVEL = os.getenv("MODELMAKER_LEVEL", logging.INFO) #cloud
 LOGGER.setLevel(int(LOGGER_LEVEL))
-
+ISOTIMEFORMAT = '%m%d-%H%M%S'
 class EstimatorBase(with_metaclass(ABCMeta, object)):
 
 	def __init__(self, modelmaker_session, train_instance_count=None, train_instance_type=None, volume_size=None,
@@ -360,6 +360,32 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 class _TrainingJob():
 
 	@classmethod
+	def s3_user_code_upload(cls,session,path):
+		if path is None:
+			return path
+		elif isinstance(path,str):
+			if path.startswith("s3://") == True:
+				return path
+			else:
+				if session.bucket == None:
+					raise Exception("Session(...,bucket=xxx) must be set!")
+				if not os.path.exists(path):
+					raise Exception("Path " + path + " does not exist!")
+				else:
+					if hasattr(cls,'s3_path'):
+						pass
+					else:
+						beijing_date = (datetime.now()+ timedelta(hours=24)).strftime(ISOTIMEFORMAT)
+						session.create_directory(session.bucket,beijing_date)
+						cls.s3_path = os.path.join(session.bucket, beijing_date)
+					session.upload_data(cls.s3_path + '/',path)
+					result = "s3://"+ os.path.join(cls.s3_path, path.split('/')[-1])
+					LOGGER.info("Success upload %s to %s!"%(path, result))
+					return result
+		else:
+			raise TypeError("code_dir must be string !!")
+
+	@classmethod
 	def s3_check_parameter(cls,path):
 		if path is None:
 			pass
@@ -423,7 +449,7 @@ class _TrainingJob():
 					_config['dataUrl'] = inputs
 					_config['output'] = estimator.output_path
 					_config['monitors'] = estimator.monitors
-					_TrainingJob.s3_check_parameter([_config['codeUrl'],_config['dataUrl'],_config['output']])	
+					_TrainingJob.s3_check_parameter([_config['dataUrl'],_config['output']])
 					if _config['frameworkId'] is None:
 						raise ValueError("when framework_type=BASIC_FRAMEWORK , framework must set")
 					else:
@@ -431,6 +457,7 @@ class _TrainingJob():
 						frameworkId_list = [ item['id'] for item in result['frameWorks']]
 						if _config['frameworkId'] not in frameworkId_list:
 							raise ValueError("framework is not exist, please check it!")
+						_config['codeUrl'] = _TrainingJob.s3_user_code_upload(estimator.modelmaker_session,_config['codeUrl'])
 				else:
 			 		raise ValueError('When framework_type is "BASIC_FRAMEWORK",<boot_file|framework|output_path|inputs|[code_dir/git_info]> is need')
 			elif estimator.framework_type == "PRESET_ALGORITHM":
@@ -464,7 +491,8 @@ class _TrainingJob():
 					_config['output'] = estimator.output_path
 					_config['monitors'] = estimator.monitors
 					#pdb.set_trace()
-					_TrainingJob.s3_check_parameter([_config['codeUrl'],_config['dataUrl'],_config['output']])	
+					_TrainingJob.s3_check_parameter([_config['dataUrl'],_config['output']])
+					_config['codeUrl'] = _TrainingJob.s3_user_code_upload(estimator.modelmaker_session,_config['codeUrl'])
 				else:
 			 		raise ValueError('When framework_type is "CUSTOM",<user_image_url|inputs|output_path> is need')
 

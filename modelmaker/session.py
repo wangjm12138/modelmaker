@@ -23,7 +23,7 @@ class Session(object):
 	such as iam auth, operation in WSS3.
 
 	"""
-	def __init__(self, config_file=None, username=None, password=None, iam_server=None, project_id=None):
+	def __init__(self, config_file=None, username=None, password=None, iam_server=None, project_id=None,bucket=None):
 		"""Initialize a SageMaker ``Session``.
 
 		Args:
@@ -37,6 +37,13 @@ class Session(object):
 			self.config_file = config_file
 		else:
 			self.config_file = os.path.expanduser(MODELMAKER_CONFIG)
+		
+		self.bucket=None
+		if bucket:
+			if bucket.endswith('/') == False:
+				self.bucket=bucket+"/"
+		else:
+			LOGGER.warning("The bucket is not set!!!")
 
 		if username and password:
 			self.username = username
