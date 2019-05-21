@@ -12,7 +12,7 @@ session = Session()
 ##//获取预置模型
 Estimator.preset_model(session)
 ###//获取预置算法
-#Estimator.preset_algorithm(session)
+Estimator.preset_algorithm(session)
 ###//获取训练框架列表
 #Estimator.train_framework(session)
 ###//获取开发框架列表

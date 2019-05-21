@@ -253,7 +253,7 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		result =  _TrainingJob.get_job_log(self, version_id, log_id)
 		return result
 
-	def log(self, version_id, log_id):
+	def log(self, log_id,version_id=None):
 		if version_id is None:
 			if hasattr(self,'version_id'):
 				version_id = self.version_id
