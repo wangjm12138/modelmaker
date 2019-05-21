@@ -14,10 +14,10 @@ conda activate py3.6
 * boto3 > 1.4.5
 * botocore > 1.5.92
 ### 安装
-pip install modelmaker-1.0.0-py3-none-any.whl
+pip install modelmaker
 ### SDK配置
 在使用ModelMaker变成之前，您需要提供必要的配置信息以便SDK可以连接到ModelMaker的服务，具体的步骤如下：
-1. 用户的目录下创建.modelmaker目录，将ModelMaker中的config.json拷贝至创建的.modelmaker目录下
+1. 用户的目录下创建.modelmaker目录，将ModelMaker中的config.json拷贝(存放在<python安装目录>/site-packages/modelmaker/config.json)至创建的.modelmaker目录下
 2. 打开.modelmaker目录下的config.json文件，用真实的账户名，密码，服务器地址替换掉usrename,password,iam_server  
 
 **说明：sdk配置是非必须的，如今ModelMaker的鉴权(session)是使用token方式，通过用户名,密码,服务器的地址获取，也可以在session创建过程中程序人为指定,详细查看后面的内容**
@@ -32,10 +32,11 @@ export MODELMAKER_LEVEL=10
 from modelmaker.session import Session
 
 session = Session()
-#session = Session(username="cdy",password="cyd@Pass1",iam_server="172.16.14.201:9048/mmr")
+#session = Session(username="xxx",password="xxxx",host_base="xxxxx", region="xxxx", bucket="xxxx")
+
 
 ###/自定义镜像/#
-job_name="wjm-custom-train1"
+job_name="custom-train1"
 custom_estimator = Estimator(
                       modelmaker_session=session,
                       #/train information/#
@@ -59,7 +60,7 @@ custom_estimator.fit(inputs=None, wait = True, logs = True, job_name=job_name)
 2. 创建模型和部署服务，Estimator实例后既可以训练量也可以创建模型和部署服务
 ```
 custom_estimator.create_model(
-                     model_name      = "wjm-custom-model",                    # 模型名称
+                     model_name      = "custom-model",                    # 模型名称
                      model_version   = "1.1.3",                       # 模型版本
                      model_path      = "s3://aiteam/image-class/",                # 模型地址
                      model_framework_type  = "CUSTOM",        # 模型框架类型
@@ -161,41 +162,52 @@ volume_size | 是（<10）| 整型 | volume_size=1
 训练参数名 | 是否必填 | 格式 | 样式
 ---|--- |--- |--- 
 algorithm | 是 | 整型 | algorithm=500000
-output_path | 是 | 字符串 | output_path="s3://aiteam/wjm-test/V0003/"
+output_path | 是 | 字符串 | output_path="s3://xxxx"
 framework_type | 是 | 字符串 | framework_type='PRESET_ALGORITHM'
 max_runtime | 否 | 整型 | max_runtime=24*3600
-hyperparameters | 否 | 字典 | hyperparameters={"a":10,"b":29}
-init_model | 否 | 字符串 | init_model="s3://fdasf"
+hyperparameters | 否 | 列表 | hyperparameters=[{"name":"name","value":"value"}]
+init_model | 否 | 字符串 | init_model="docker://sd"
 
 基础框架：
 
 训练参数名 | 是否必填 | 格式 | 样式
 ---|---|--- |---
-code_dir | 否（与git_info二选一必填）| 字符串 | code_dir="s3://aiteam/wjm-test/V0003/"
-git_info | 否（与code_dir二选一必填）| 字典 | git_info={"username":XXX,"password":"xxx"}
+code_dir | 否（与git_info二选一必填）| 字符串 | code_dir="s3://xxxx"
+git_info | 否（与code_dir二选一必填）| 字典 | git_info={"username":"XXX","password":"xxx","branch":"XXXX"}
 framework | 是| 整型 | framework=500100
-framework_type | 是| 字符串 | framework_type='BASIC_FRAMEWORK'
+framework_type | 是| 字符串 | framework_type="BASIC_FRAMEWORK"
 boot_file | 是| 字符串 | boot_file="train.py"
-output_path | 是| 字符串 | output_path="s3://aiteam/wjm-test/V0003/"
-input_files | 否| 列表 | input_files=["a.txt","b.txt"]
-monitors | 否| 列表 | monitors=[{r'name':r'accuracy',r'regular':r'.*?accuracy\s=\s(.*)',r'sample':r'.*?loss\s=\s(.*)\s,\sstep\s=\s(.*)'}]
-hyperparameters | 否| 字典 | hyperparameters={"a":10,"b":29}
+output_path | 是| 字符串 | output_path="s3://xxxx"
+input_files | 否| 列表 | input_files=[{"name":"sf","path":"docker://sd"}]
+monitors | 否| 列表 | monitors=[{r"name":r"Loss",r"regular":r"loss=\d+",r"sample":"loss=20"}]
+hyperparameters | 否| 列表 | hyperparameters=[{"name":"name","value":"value"}]
 max_runtime | 否| 整型 | max_runtime=24*3600
 
 自定义：
 
 训练参数名 | 是否必填| 格式 | 样式
 ---|---|--- |---
-code_dir | 否（与git_info二选一必填）| 字符串 | code_dir="s3://aiteam/wjm-test/V0003/"
-git_info | 否（与code_dir二选一必填）| 字典 | git_info={"username":XXX,"password":"xxx"}
-framework_type | 是| 整型 | framework_type='CUSTOM'
-user_image_url | 是| 字符串| user_image_url='172.16.14.172/test/custom:v1.0'
-output_path | 是| 字符串 | output_path="s3://aiteam/wjm-test/V0003/"
+code_dir | 否（与git_info二选一必填）| 字符串 | code_dir="s3://xxxx"
+git_info | 否（与code_dir二选一必填）| 字典 | git_info={"username":"xxx","password":"xxx","branch":"XXXX"}
+framework_type | 是| 整型 | framework_type="CUSTOM"
+user_image_url | 是| 字符串| user_image_url="镜像url"
+output_path | 是| 字符串 | output_path="s3://xxxx"
 user_command | 否| 字符串 | user_command="/bin/bash"
 user_command_args | 否| 字符串| user_command_args="/home/test/start.sh"
-env | 否| 列表 | env=[{"env1":xxx,"evn2":sss}]
-monitors | 否| 列表 | monitors=[{r'name':r'accuracy',r'regular':r'.*?accuracy\s=\s(.*)',r'sample':r'.*?loss\s=\s(.*)\s,\sstep\s=\s(.*)'}]
+env | 否| 列表 | env=[{"name":"sf","evn2":"docker://sd}]
+monitors | 否| 列表 | monitors=[{r"name":r"Loss",r"regular":r"loss=\d+",r"sample":"loss=20"}]
 max_runtime | 否| 整型 | max_runtime=24*3600
+
+创建预置算法模型参数列表
+
+训练参数名 | 是否必填 | 格式 | 样式
+---|---|---|---
+model_version | 是 | 字符串 | model_version="1.1.1.2"
+model_framework_type | 否 | 字符串 | model_framework_type="PRESET_MODEL"
+model_name | 否 | 字符串 | model_name="preset1-model"
+model_framework | 否 | 整型 | model_framework=500000
+model_path | 否 | 字符串 | model_path="s3://xxxx"
+
 1. 创建模型
 ```
 #-*-coding:utf-8-*-
@@ -215,7 +227,7 @@ model_instance.create_model(
 ```
 2. 部署服务
 ```
-redictor_response = basic_estimator.deploy_predictor(
+redictor_response = model_instance.deploy_predictor(
                                                 service_name  = "basic-predict",
                                                 service_type  = "ONLINE_SERVICE",
                         service_models = [{"weight":100,"resourceId":500151,"instanceCount":1}])
@@ -261,35 +273,44 @@ redictor_response = basic_estimator.deploy_predictor(
 
 训练参数名 | 是否必填 | 格式 | 样式
 ---|---|---|---
+model_version | 是 | 字符串 | model_version="1.1.1.2"
 model_framework_type | 是 | 字符串 | model_framework_type="PRESET_MODEL"
 model_name | 是 | 字符串 | model_name="preset1-model"
-model_version | 是 | 字符串 | model_version="1.1.1.2"
 model_framework | 是 | 整型 | model_framework=500000
-model_path | 是 | 字符串 | model_path="s3://aiteam/image-class/output/1.4/"
+model_path | 是 | 字符串 | model_path="s3://xxxx"
  
 基础框架参数列表
 
 训练参数名 | 是否必填 | 格式 | 样式
 ---|--- | --- | ---
 model_framework_type | 是 | 字符串 | model_framework_type='BASIC_FRAMEWORK'
-model_name | 是 | 字符串 | model_name="basic-model"
-model_version | 是  | 字符串 | model_version = "v1.12.1"
+model_name | 否 | 字符串 | model_name="basic-model"
+model_version | 是  | 字符串 | model_version = "1.12.1"
 model_framework | 是  | 整型 | model_framework=500150
-model_path | 是  | 字符串 | model_path="s3://aiteam/wjm_output/V0001/"
-model_code_dir | 否  | 字符串 | model_code_dir="s3://aiteam/mnist/code/"
-model_git_info | 否  | 列表 | model_git_info=[{"username":"xxx","password":"xxx"}]
-model_boot_file | 否 | 字符串 | model_boot_file="train.py"
-model_call_specs | 否 | 字符串 | model_call_specs="xxxx"
+model_path | 是  | 字符串 | model_path="s3://xxxx"
+model_code_dir | 是  | 字符串 | model_code_dir="s3://xxxx"
+model_git_info | 否  | 列表 | model_git_info=[{"username":"xxx","password":"xxx","branch":"xxxx"}]
+预置算法参数列表
+
+训练参数名 | 是否必填 | 格式 | 样式
+---|---|---|---
+model_version | 是 | 字符串 | model_version="1.1.1.2"
+model_framework_type | 否 | 字符串 | model_framework_type="PRESET_MODEL"
+model_name | 否 | 字符串 | model_name="preset1-model"
+model_framework | 否 | 整型 | model_framework=500000
+model_path | 否 | 字符串 | model_path="s3://xxxx"}]
+model_boot_file | 是 | 字符串 | model_boot_file="train.py"
+model_call_specs | 是 | 字符串 | model_call_specs="xxxx"
 
 自定义参数列表
 
 训练参数名 | 是否必填 | 格式 | 样式
 --- |--- | --- | ---
 model_framework_type | 是 | 字符串 | model_framework_type="CUSTOM"
-model_name | 是 | 字符串 | model_name="XXX"
-model_version | 是 | 字符串 | model_version="v1.12.1"
+model_name | 是 | 字符串 | model_name="xxx"
+model_version | 是 | 字符串 | model_version="1.12.1"
 model_mirrorUrl | 是 | 字符串 | model_mirrorUrl="docker:/sdf"
-model_path | 否 | 字符串 | model_path="s3:/input/s"
+model_path | 是 | 字符串 | model_path="s3://xxx"
 
 创建部署参数列表
 
