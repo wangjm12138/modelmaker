@@ -208,6 +208,39 @@ model_name | 否 | 字符串 | model_name="preset1-model"
 model_framework | 否 | 整型 | model_framework=500000
 model_path | 否 | 字符串 | model_path="s3://xxxx"
 
+创建基础框架模型参数列表
+
+训练参数名 | 是否必填 | 格式 | 样式
+---|--- | --- | ---
+model_framework_type | 否 | 字符串 | model_framework_type='BASIC_FRAMEWORK'
+model_name | 否 | 字符串 | model_name="basic-model"
+model_version | 是  | 字符串 | model_version = "1.12.1"
+model_framework | 是  | 整型 | model_framework=500150
+model_path | 是  | 字符串 | model_path="s3://xxxx"
+model_code_dir | 是  | 字符串 | model_code_dir="s3://xxxx"
+model_git_info | 否  | 列表 | model_git_info=[{"username":"xxx","password":"xxx","branch":"xxxx"}]
+model_boot_file | 是 | 字符串 | model_boot_file="predict.py"
+
+
+创建自定义模型参数列表
+
+训练参数名 | 是否必填 | 格式 | 样式
+--- |--- | --- | ---
+model_framework_type | 否 | 字符串 | model_framework_type="CUSTOM"
+model_name | 否 | 字符串 | model_name="xxx"
+model_version | 是 | 字符串 | model_version="1.12.1"
+model_mirrorUrl | 是 | 字符串 | model_mirrorUrl="docker:/sdf"
+model_path | 是 | 字符串 | model_path="s3://xxx"
+
+创建部署参数列表
+
+训练参数名 | 是否必填 | 格式 | 样式
+---|--- | --- | ---
+service_name | 是 | 字符串 | service_name="basic-predict"
+service_type | 是 | 字符串 | service_type="ONLINE_SERVICE"
+service_models | 是 | 列表(字典) | service_models=[{"weight":100,"resourceId":500151,"instanceCount":1}]
+
+
 1. 创建模型
 ```
 #-*-coding:utf-8-*-
@@ -284,23 +317,13 @@ model_path | 是 | 字符串 | model_path="s3://xxxx"
 训练参数名 | 是否必填 | 格式 | 样式
 ---|--- | --- | ---
 model_framework_type | 是 | 字符串 | model_framework_type='BASIC_FRAMEWORK'
-model_name | 否 | 字符串 | model_name="basic-model"
+model_name | 是 | 字符串 | model_name="basic-model"
 model_version | 是  | 字符串 | model_version = "1.12.1"
 model_framework | 是  | 整型 | model_framework=500150
 model_path | 是  | 字符串 | model_path="s3://xxxx"
 model_code_dir | 是  | 字符串 | model_code_dir="s3://xxxx"
 model_git_info | 否  | 列表 | model_git_info=[{"username":"xxx","password":"xxx","branch":"xxxx"}]
-预置算法参数列表
-
-训练参数名 | 是否必填 | 格式 | 样式
----|---|---|---
-model_version | 是 | 字符串 | model_version="1.1.1.2"
-model_framework_type | 否 | 字符串 | model_framework_type="PRESET_MODEL"
-model_name | 否 | 字符串 | model_name="preset1-model"
-model_framework | 否 | 整型 | model_framework=500000
-model_path | 否 | 字符串 | model_path="s3://xxxx"}]
-model_boot_file | 是 | 字符串 | model_boot_file="train.py"
-model_call_specs | 是 | 字符串 | model_call_specs="xxxx"
+model_boot_file | 是 | 字符串 | model_boot_file="predict.py"
 
 自定义参数列表
 
