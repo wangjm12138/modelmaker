@@ -49,7 +49,6 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 
 #		if inputs is None:
 #			raise ValueError('Input data is needed for training')
-
 		data = _TrainingJob.start_new(self, inputs)
 		version_id = data['versionId']
 		self.job_id = data['id']
@@ -321,21 +320,33 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 			raise Exception("get train job info error!")
 		status = result['status']
 		if status == 'FINISH':
-#		if kwargs.get('model_name') == None and self.model_name is None:
-#			ISOTIMEFORMAT = '%m%d-%H%M%S'
-#			beijing_date = (datetime.now()+ timedelta(hours=8)).strftime(ISOTIMEFORMAT)
-#			kwargs['model_name'] = self.job_name + '-' + beijing_date
 			if kwargs.get('model_path') == None:
 				if self.output_path == None:
 					raise ValueError('model_path is None!')
 				else:
 					kwargs['model_path'] = self.output_path
+			if kwargs.get('model_name') == None:
+				if self.job_name == None:
+					raise ValueError('model_name is None!')
+				else:
+					kwargs['model_name'] = self.job_name
+
 			if kwargs.get('model_framework_type') == None:
 				if self.framework_type == None:
 					raise ValueError('model_framework_type is None!')
 				else:
 					if self.framework_type == "PRESET_ALGORITHM":
 						kwargs['model_framework_type'] = "PRESET_MODEL"
+						if kwargs.get('model_framework') == None:
+							if self.algorithm == None:
+								raise ValueError('model_framework is None!')
+							else:
+								result = _TrainingJob.get_preset_algorithm(self.modelmaker_session)
+								presetAlgorithms_id_name_dict = { item['id']:item['name'] for item in result['presetAlgorithms']}
+								preset_model_name = presetAlgorithms_id_name_dict[self.algorithm]
+								result = _TrainingJob.get_preset_model(self.modelmaker_session)
+								preset_model_name_id_dict = { item['name']:item['id'] for item in result['presetModels']}
+								kwargs['model_framework'] = preset_model_name_id_dict[preset_model_name]
 					else:
 						kwargs['model_framework_type'] = self.framework_type
 			create_model_resp = self.model_api.create_model(**kwargs)

@@ -34,8 +34,8 @@ custom_estimator.create_model(
                      model_framework_type  = "CUSTOM",        # 模型框架类型
                      model_mirrorUrl   = "172.16.14.172/test/cuda:9.0-devel-ubuntu16.04")           # 模型版本
 
-predictor_instance = custom_estimator.deploy_predictor(
-						service_name  = "wjm-custom-predictor1",
-						service_type  = "ONLINE_SERVICE",
-                        service_models = [{"weight":100,"resourceId":500550,"instanceCount":1}])
-
+#predictor_instance = custom_estimator.deploy_predictor(
+#						service_name  = "wjm-custom-predictor1",
+#						service_type  = "ONLINE_SERVICE",
+#                        service_models = [{"weight":100,"resourceId":500550,"instanceCount":1}])
+#

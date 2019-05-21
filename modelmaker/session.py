@@ -166,7 +166,7 @@ class Session(object):
 			self.project_id = os.environ["PROJECT_ID"]
 		else:
 			self.project_id = 0
-			LOGGER.warning("The project_id is set to default 0")
+			#LOGGER.warning("The project_id is set to default 0")
 
 	def upload_data(self, bucket_path, path):
 		"""Upload local file or directory to s3.
