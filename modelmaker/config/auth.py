@@ -11,7 +11,7 @@ LOGGER = logging.getLogger('modelmaker-sdk/auth')
 LOGGER_LEVEL = os.getenv("MODELMAKER_LEVEL", logging.INFO) #cloud
 LOGGER.setLevel(int(LOGGER_LEVEL))
 
-def get_temporary_aksk_without_commission(token, iam_url):
+def get_temporary_aksk_without_commission(token, iam_url, verify_ssl=True):
 	"""get IAM's temporary AK/SK without commission which lasts for 24h
 		:return: {
 				 "s3": {
@@ -24,7 +24,6 @@ def get_temporary_aksk_without_commission(token, iam_url):
 				 }
 				 }
 	"""
-	body= {}
 	headers = {
 		"Auth-Token": token,
 		"Content-Type": "application/json"
@@ -37,7 +36,7 @@ def get_temporary_aksk_without_commission(token, iam_url):
 	LOGGER.debug("url:"+url)
 	LOGGER.debug({'headers':headers})
 	try:
-		response = requests.get(url, headers=headers, verify=False, data=json.dumps(body))
+		response = requests.get(url, headers=headers, verify=verify_ssl)
 		if response.status_code > 300:
 			raise IAMException(code=response.status_code, message="Connect iam server error!!!")
 		else:
@@ -53,7 +52,7 @@ def get_temporary_aksk_without_commission(token, iam_url):
 	except Exception as e:
 		raise Exception(e)
 
-def authorize_by_token(username, password, endpoint):
+def authorize_by_token(username, password, endpoint, verify_ssl=True):
 	"""
 	Set auth information to client configure
 	:param username:  User name
@@ -79,7 +78,7 @@ def authorize_by_token(username, password, endpoint):
 	LOGGER.debug("url:"+url)
 	LOGGER.debug({'headers':headers,'body':body})
 	try:
-		 response = requests.post(url, headers=headers, verify=False, data=json.dumps(body))
+		 response = requests.post(url, headers=headers, verify=verify_ssl, data=json.dumps(body))
 		 if response.status_code > 300:
 			 raise IAMException(code=response.status_code, message="Connect iam server error!!!")
 		 else:
