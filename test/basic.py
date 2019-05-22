@@ -25,9 +25,9 @@ basic_estimator = Estimator(
 basic_estimator.fit("s3://aiteam/mnist/data/", wait = True, logs = True, job_name=job_name)
 
 basic_estimator.create_model(
-                     model_name      = "basic-model",                    # 模型名称
+#                     model_name      = "basic-model",                    # 模型名称
                      model_version   = "1.1.1",                       # 模型版本
-                     model_framework  = 500150,                      # 模型框架id
+#                     model_framework  = 500150,                      # 模型框架id
 #                     model_framework_type  = 'BASIC_FRAMEWORK',      # 模型框架
 					 model_code_dir      = "s3://aiteam/mnist/code/", # 推理代码目录
 #					 model_path = "s3://aiteam/wjm_output/V0001/",   #模型组件路径

@@ -346,7 +346,25 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 								preset_model_name = presetAlgorithms_id_name_dict[self.algorithm]
 								result = _TrainingJob.get_preset_model(self.modelmaker_session)
 								preset_model_name_id_dict = { item['name']:item['id'] for item in result['presetModels']}
-								kwargs['model_framework'] = preset_model_name_id_dict[preset_model_name]
+								try:
+									kwargs['model_framework'] = preset_model_name_id_dict[preset_model_name]
+								except Exception as e:
+									raise Exception("model_framework must set!", e)
+					elif self.framework_type == "BASIC_FRAMEWORK":
+						kwargs['model_framework_type'] = self.framework_type
+						if kwargs.get('model_framework') == None:
+							if self.framework == None:
+								raise ValueError('model_framework is None!')
+							else:
+								result = _TrainingJob.get_framework_list(self.modelmaker_session,'TRAIN')
+								basic_framework_id_name_dict = { item['id']:item['name'] for item in result['frameWorks']}
+								basic_model_name = basic_framework_id_name_dict[self.framework]
+								result = _TrainingJob.get_framework_list(self.modelmaker_session,'PREDICT')
+								basic_framework_name_id_dict = { item['name']:item['id'] for item in result['frameWorks']}
+								try:
+									kwargs['model_framework'] = basic_framework_name_id_dict[basic_model_name]
+								except Exception as e:
+									raise Exception("model_framework must set!", e)
 					else:
 						kwargs['model_framework_type'] = self.framework_type
 			create_model_resp = self.model_api.create_model(**kwargs)
