@@ -4,7 +4,7 @@
 from setuptools import setup, find_packages
 
 setup(name='modelmaker',
-      version='1.4.3',
+      version='1.5.0',
       description='Wangsu ai sdk',
       author='wangjm',
       author_email='wangjm2@wangsu.com',
