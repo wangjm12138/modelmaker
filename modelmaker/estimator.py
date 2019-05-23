@@ -45,6 +45,7 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 	def fit(self, inputs=None, wait=False, logs=False, job_name=None):
 		"""Train a model using the input training dataset.
 		"""
+		starttime = datetime.now()
 		job_name = self._prepare_for_training(job_name=job_name)
 
 #		if inputs is None:
@@ -64,20 +65,24 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 				 	raise Exception("get train job info error!")
 				status = result['status']
 				if status == 'FINISH':
-					seconds = 6650 / 1000
-					m, s = divmod(seconds, 60)
-					h, m = divmod(m, 60)
-					duration_format = "%02d:%02d:%02d" % (h, m, s)
-					LOGGER.info("Job [ %s ] duration is %s" % (job_name, duration_format))
+					endtime = datetime.now()
+					duration = (endtime-starttime).seconds
+					LOGGER.info("Job [ %s ] duration is %s seconds" % (job_name, duration))
 					LOGGER.info("=============%s==================="%('Output'))
 					output = self._get_job_output(version_id=version_id)
 					LOGGER.info(output)
 					break
 				elif status == 'STARTING_FAIL':
+					endtime = datetime.now()
+					duration = (endtime-starttime).seconds
+					LOGGER.info("Job [ %s ] duration is %s seconds" % (job_name, duration))
 					LOGGER.info("Job [ %s ] is %s" % (job_name, "start failed"))
 					time.sleep(3)
 					break
 				elif status == 'TRAINING_FAIL':
+					endtime = datetime.now()
+					duration = (endtime-starttime).seconds
+					LOGGER.info("Job [ %s ] duration is %s seconds" % (job_name, duration))
 					LOGGER.info("Job [ %s ] is %s" % (job_name, "train failed"))
 					time.sleep(3)
 					break
@@ -396,6 +401,8 @@ class _TrainingJob():
 			if path.startswith("s3://") == True:
 				return path
 			else:
+				if path[-1] == "/":
+					path = path[:-1]
 				if session.bucket == None:
 					raise Exception("Session(...,bucket=xxx) must be set!")
 				if not os.path.exists(path):
@@ -404,11 +411,11 @@ class _TrainingJob():
 					if hasattr(cls,'s3_path'):
 						pass
 					else:
-						beijing_date = (datetime.now()+ timedelta(hours=24)).strftime(ISOTIMEFORMAT)
+						beijing_date = (datetime.now()+ timedelta(hours=8)).strftime(ISOTIMEFORMAT)
 						session.create_directory(session.bucket,beijing_date)
 						cls.s3_path = os.path.join(session.bucket, beijing_date)
 					session.upload_data(cls.s3_path + '/',path)
-					result = "s3://"+ os.path.join(cls.s3_path, path.split('/')[-1])
+					result = "s3://"+ os.path.join(cls.s3_path, path.split('/')[-1]) + "/"
 					LOGGER.info("Success upload %s to %s!"%(path, result))
 					return result
 		else:
