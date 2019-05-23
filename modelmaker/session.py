@@ -74,7 +74,7 @@ class Session(object):
 		else:
 			raise ValueError("username/password must be set in session(username=xxx,password=xxx) or in config file")
 
-		self.s3_protocol = "https"
+		self.s3_protocol = "http"
 		self.verify_ssl = True
 		self.region = "js01"
 		self.host_base = "https://mmr.wangsucloud.com:9948/mmr"

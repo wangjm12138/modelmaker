@@ -14,7 +14,7 @@ basic_estimator = Estimator(
                       framework=500100,                                               # AI引擎版本?
                       framework_type='BASIC_FRAMEWORK',                             # AI引擎版本?
 					  #/train code/#
-					  code_dir="/home/wangjm/wangjm12138_git/train.py",                          # 训练代码目录,s3路径?
+					  code_dir="s3://aiteam/mnist/code/",                          # 训练代码目录,s3路径?
                       boot_file="train.py",                						   # 训练启动脚本目录,s3路径？
 					  #/output/
 					  output_path="s3://aiteam/wjm_output/",			          # 训练输出位置，s3路径？

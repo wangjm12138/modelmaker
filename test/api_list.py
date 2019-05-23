@@ -10,11 +10,11 @@ session = Session()
 
 ##===================Esitmator【类方法】=======================
 ##//获取预置模型
-Estimator.preset_model(session)
+#Estimator.preset_model(session)
 ###//获取预置算法
-Estimator.preset_algorithm(session)
+#Estimator.preset_algorithm(session)
 ###//获取训练框架列表
-Estimator.train_framework(session)
+#Estimator.train_framework(session)
 ###//获取开发框架列表
 #Estimator.development_framework(session)
 ###//获取部署框架列表

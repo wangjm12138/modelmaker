@@ -112,13 +112,13 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 						if log_result.get('logs'):
 							log_msg = log_result['logs']
 							if len(log_msg):
-								LOGGER.info(log_msg[0]['content'])
-								self.log_id = log_result['logs'][0]['id']
+								for item in log_msg:
+									LOGGER.info(item['content'])
+								self.log_id = int(log_msg[-1]['id']) + 1
 							else:
 								#self.log_id = log_result['logs'][0]['id']
 								LOGGER.info("log is Null")
 							#self.log_id = log_result['logs'][0]['id']
-							LOGGER.info(log_msg)
 						else:
 							LOGGER.info("log is Null")
 					time.sleep(8)
