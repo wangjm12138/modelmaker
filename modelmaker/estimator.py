@@ -415,7 +415,10 @@ class _TrainingJob():
 						session.create_directory(session.bucket,beijing_date)
 						cls.s3_path = os.path.join(session.bucket, beijing_date)
 					session.upload_data(cls.s3_path + '/',path)
-					result = "s3://"+ os.path.join(cls.s3_path, path.split('/')[-1]) + "/"
+					if os.path.isdir(path):
+						result = "s3://"+ os.path.join(cls.s3_path, path.split('/')[-1]) + "/"
+					else:
+						result = "s3://"+ cls.s3_path + "/"
 					LOGGER.info("Success upload %s to %s!"%(path, result))
 					return result
 		else:
