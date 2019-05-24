@@ -62,7 +62,7 @@ class ApiClient(object):
 			self.default_headers[header_name] = header_value
 		self.cookie = cookie
 		# Set default User-Agent.
-		self.user_agent = 'Swagger-Codegen/1.0.0/python'
+		#self.user_agent = 'Swagger-Codegen/1.0.0/python'
 
 	def __del__(self):
 		self.pool.close()
@@ -111,7 +111,13 @@ class ApiClient(object):
 
 		http_reponse = self.__call_api(resource_path, method,
 								header_params, body, auth_settings)
-		data = json.loads(http_reponse.data.decode('utf-8'))
+		data = str(http_reponse.data,encoding="utf-8")
+		try:
+			data = eval(data)
+		except Exception as e:
+			LOGGER.info(data)
+			raise Exception("Network error!")
+		#data = json.loads(http_reponse.data.decode('utf-8'))
 		if data.get('errorCode'):
 			if data['errorCode'] == 1002 or data['errorCode'] == 1003:
 				LOGGER.info("Refresh the token,because token is invalid or out of indate")
