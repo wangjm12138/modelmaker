@@ -108,15 +108,10 @@ class ApiClient(object):
 
 	def call_api(self, resource_path, method,
 				 header_params=None,body=None, auth_settings=None):
-
 		http_reponse = self.__call_api(resource_path, method,
 								header_params, body, auth_settings)
 		data = str(http_reponse.data,encoding="utf-8")
-		try:
-			data = eval(data)
-		except Exception as e:
-			LOGGER.info(data)
-			raise Exception("Network error!")
+		data = eval(data)
 		#data = json.loads(http_reponse.data.decode('utf-8'))
 		if data.get('errorCode'):
 			if data['errorCode'] == 1002 or data['errorCode'] == 1003:

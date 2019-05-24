@@ -456,7 +456,9 @@ class ModelApiAccountImpl(ModelApiBase):
 		"""
 		service_deploy_resp = self.service_api.create_service(project_id=self.session.project_id,
 															  body=self.deploy_service_body)
-		data = json.loads(service_deploy_resp.data.decode('utf-8'))
+		#data = json.loads(service_deploy_resp.data.decode('utf-8'))
+		data = str(service_deploy_resp.data, encoding="utf-8")
+		data = eval(data)
 		LOGGER.info("=============%s==================="%('Service Response'))
 		LOGGER.info(data)
 		if data.get('errorCode'):
@@ -482,6 +484,7 @@ class ModelApiAccountImpl(ModelApiBase):
 				if count_status_query_times == 0:
 					print("\nDeploying...")
 				count_status_query_times += 1
+				time.sleep(MODEL_WAIT_SECOND)
 			elif data['status'] == 'DEPLOYING_FAIL':
 				print("\nDeploying failed")
 				break

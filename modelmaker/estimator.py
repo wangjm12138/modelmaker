@@ -116,11 +116,13 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 									LOGGER.info(item['content'])
 								self.log_id = int(log_msg[-1]['id']) + 1
 							else:
+								pass
 								#self.log_id = log_result['logs'][0]['id']
-								LOGGER.info("log is Null")
+								#LOGGER.info("log is Null")
 							#self.log_id = log_result['logs'][0]['id']
 						else:
-							LOGGER.info("log is Null")
+							pass
+							#LOGGER.info("log is Null")
 					time.sleep(8)
 				else:
 					LOGGER.info("Job [ %s ] status is %s, please check log" % (job_name, status))
