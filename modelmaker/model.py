@@ -465,37 +465,37 @@ class ModelApiAccountImpl(ModelApiBase):
 				raise Exception("create service  error!")
 		self.service_id = data['id']
 	
-		count_status_query_times = 0
-		while True:
-			service_query_resp = self._get_service_info()
-			data = json.loads(service_query_resp.data.decode('utf-8'))
-			if data.get('errorCode'):
-				raise Exception("get service  info error!")
-
-			if super(ModelApiAccountImpl, self).is_reach_maximum_times(count_status_query_times):
-				print(
-					"Reach the maximum service status query times, the current status is %s" % data['status'])
-				break
-
-			if data['status'] == 'RUNNING':
-				print("\nDeploy finished")
-				break
-			elif data['status'] == 'DEPLOYING':
-				if count_status_query_times == 0:
-					print("\nDeploying...")
-				count_status_query_times += 1
-				time.sleep(MODEL_WAIT_SECOND)
-			elif data['status'] == 'DEPLOYING_FAIL':
-				print("\nDeploying failed")
-				break
-			elif data['status'] == 'STOPPING':
-				print("\nStopping")
-			elif data['status'] == 'STOPPED':
-				print("\nStopped")
-				break
-			else:
-				time.sleep(MODEL_WAIT_SECOND)
-		
+#		count_status_query_times = 0
+#		while True:
+#			service_query_resp = self._get_service_info()
+#			data = json.loads(service_query_resp.data.decode('utf-8'))
+#			if data.get('errorCode'):
+#				raise Exception("get service  info error!")
+#
+#			if super(ModelApiAccountImpl, self).is_reach_maximum_times(count_status_query_times):
+#				print(
+#					"Reach the maximum service status query times, the current status is %s" % data['status'])
+#				break
+#
+#			if data['status'] == 'RUNNING':
+#				print("\nDeploy finished")
+#				break
+#			elif data['status'] == 'DEPLOYING':
+#				if count_status_query_times == 0:
+#					print("\nDeploying...")
+#				count_status_query_times += 1
+#				time.sleep(MODEL_WAIT_SECOND)
+#			elif data['status'] == 'DEPLOYING_FAIL':
+#				print("\nDeploying failed")
+#				break
+#			elif data['status'] == 'STOPPING':
+#				print("\nStopping")
+#			elif data['status'] == 'STOPPED':
+#				print("\nStopped")
+#				break
+#			else:
+#				time.sleep(MODEL_WAIT_SECOND)
+#		
 		return PredictorApiAccountImpl(self.session, self.service_id)
 
 #	def delete_model_endpoint(self, model_id=None, service_id=None):

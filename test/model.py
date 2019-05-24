@@ -15,7 +15,7 @@ model_instance = Model(session)
 #                     model_path = "s3://aiteam/wjm_output/V0001/",   #模型组件路径
 #                     model_boot_file     = "predict.py")              # 启动文件
 predictor_response = model_instance.deploy_predictor(
-                                                service_name  = "new-basic-predict44",
+                                                service_name  = "ssss-basic-predict",
                                                 service_type  = "ONLINE_SERVICE",
                         service_models = [{"modelVersionId":500565,"weight":100,"resourceId":500004,"instanceCount":1}]
 )
