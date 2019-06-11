@@ -372,6 +372,7 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 									kwargs['model_framework'] = basic_framework_name_id_dict[basic_model_name]
 								except Exception as e:
 									raise Exception("model_framework must set!", e)
+						kwargs['model_code_dir'] = _TrainingJob.s3_user_code_upload(self.modelmaker_session,kwargs['model_code_dir'])
 					else:
 						kwargs['model_framework_type'] = self.framework_type
 			create_model_resp = self.model_api.create_model(**kwargs)

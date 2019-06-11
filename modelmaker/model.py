@@ -15,8 +15,7 @@ LOGGER = logging.getLogger('modelmaker-sdk/Model')
 LOGGER_LEVEL = os.getenv("MODELMAKER_LEVEL", logging.INFO) #cloud
 LOGGER.setLevel(int(LOGGER_LEVEL))
 
-ISO_TIME_FORMAT = '%m%d-%H%M%S'
-
+ISOTIMEFORMAT = '%m%d-%H%M%S'
 CREATE_MODEL_PARAMS = set(['model_name', 'model_version', 'model_path',
 						   'model_framework', 'model_framework_type', 'model_code_dir',
 						   'model_boot_file', 'model_call_specs', 'model_description','model_mirrorUrl','model_id','model_git_info'])
@@ -152,6 +151,36 @@ class ModelApiBase(with_metaclass(ABCMeta, object)):
 		"""
 		Initialize a ModelMaker Model instance.
 		"""
+	@classmethod
+	def s3_user_code_upload(cls,session,path):
+		if path is None:
+			return path
+		elif isinstance(path,str):
+			if path.startswith("s3://") == True:
+				return path
+			else:
+				if path[-1] == "/":
+					path = path[:-1]
+				if session.bucket == None:
+					raise Exception("Session(...,bucket=xxx) must be set!")
+				if not os.path.exists(path):
+					raise Exception("Path " + path + " does not exist!")
+				else:
+					if hasattr(cls,'s3_path'):
+						pass
+					else:
+						beijing_date = (datetime.now()+ timedelta(hours=8)).strftime(ISOTIMEFORMAT)
+						session.create_directory(session.bucket,beijing_date)
+						cls.s3_path = os.path.join(session.bucket, beijing_date)
+					session.upload_data(cls.s3_path + '/',path)
+					if os.path.isdir(path):
+						result = "s3://"+ os.path.join(cls.s3_path, path.split('/')[-1]) + "/"
+					else:
+						result = "s3://"+ cls.s3_path + "/"
+					LOGGER.info("Success upload %s to %s!"%(path, result))
+					return result
+		else:
+			raise TypeError("code_dir must be string !!")
 
 	def check_params(self, flag, **kwargs):
 		""" Checking the model parameters validity from console
@@ -216,7 +245,7 @@ class ModelApiBase(with_metaclass(ABCMeta, object)):
 				if _config['frameworkId'] not in frameworkId_list:
 					raise ValueError("model_framwork is not exist, please check it!")
 				if 'model_code_dir' in model_params:
-					_config['codeUrl'] = model_params['model_code_dir']
+					_config['codeUrl'] = ModelApiBase.s3_user_code_upload(self.session, model_params['model_code_dir'])
 				if 'model_git_info' in model_params:
 					_config['gitInfo'] = model_params['model_git_info']
 				if 'model_boot_file' in model_params:

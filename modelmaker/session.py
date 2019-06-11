@@ -134,8 +134,11 @@ class Session(object):
 				else:
 					LOGGER.warning("s3_protocol set default:%s"%self.s3_protocol)
 					
+		if LOGGER_LEVEL == 10:
+			LOGGER.debug({'username':self.username, 'password':self.password, 'iam_server':self.iam_server, 'bucket':self.bucket})
+		else:
+			LOGGER.info({'username':self.username, 'password':self.password.replace(self.password,'*'*len(self.password)), 'iam_server':self.iam_server, 'bucket':self.bucket})
 
-		LOGGER.info({'username':self.username, 'password':self.password, 'iam_server':self.iam_server, 'bucket':self.bucket})
 		#pdb.set_trace()
 		if self.username and self.password and self.iam_server:
 				try:
@@ -152,9 +155,10 @@ class Session(object):
 				except Exception as e:
 						raise Exception("Get ak/sk failed! ", e)
 				self.access_key, self.secret_key, self.s3_endpoint_url, self.s3_region, self.s3_mirror_auth, self.s3_mirror_endpoint_url = res
-
-				LOGGER.info({'response':{'url':self.s3_endpoint_url,'ak':self.access_key,'sk':self.secret_key,'region':self.s3_region}})
-				
+				if LOGGER_LEVEL == 10:
+					LOGGER.debug({'response':{'url':self.s3_endpoint_url,'ak':self.access_key,'sk':self.secret_key,'region':self.s3_region}})
+				else:
+					LOGGER.info({'response':{'url':self.s3_endpoint_url,'ak':self.access_key,'sk':self.secret_key.replace(self.secret_key,'*'*len(self.secret_key)),'region':self.s3_region}})
 				self.s3_client = WCS(endpoint_url=self.s3_endpoint_url, ak=self.access_key, sk=self.secret_key, region=self.s3_region, method=self.s3_protocol)
 				self.client = create_client(context="default", access_key=self.access_key, secret_key=self.secret_key, \
 									username=self.username, password=self.password, host=self.iam_server, verify_ssl=self.verify_ssl, token=self.token)
@@ -168,6 +172,7 @@ class Session(object):
 		else:
 			self.project_id = 0
 			#LOGGER.warning("The project_id is set to default 0")
+		LOGGER.info("Init Success")
 
 	def upload_data(self, bucket_path, path):
 		"""Upload local file or directory to s3.
