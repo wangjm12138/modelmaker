@@ -25,7 +25,7 @@ logging.basicConfig()
 LOGGER = logging.getLogger('modelmaker-sdk/Api')
 LOGGER_LEVEL = os.getenv("MODELMAKER_LEVEL", logging.INFO) #cloud
 LOGGER.setLevel(int(LOGGER_LEVEL))
-
+Retry=3
 class ApiClient(object):
 	"""Generic API client for all api.
 
@@ -125,11 +125,32 @@ class ApiClient(object):
 								header_params, body, auth_settings)
 				data = json.loads(http_reponse.data.decode('utf-8'))
 				if data.get('errorCode'):
+					LOGGER.info("Api call error 1 time!")
+					for i in range(Retry):
+						http_reponse = self.__call_api(resource_path, method,
+											header_params, body, auth_settings)
+						data = str(http_reponse.data,encoding="utf-8")
+						data = eval(data)
+						if data.get('errorCode') == None:
+							return http_reponse
+						else:
+							LOGGER.info("Api call error % time!"%(i+2))
 					LOGGER.info(data)
 					raise Exception("Api call error!")
 			elif data['errorCode'] == 102009 or data['errorCode'] == 101009:
 				pass
 			else:
+				LOGGER.info("Api call error 1 time!")
+				for i in range(Retry):
+					http_reponse = self.__call_api(resource_path, method,
+										header_params, body, auth_settings)
+					data = str(http_reponse.data,encoding="utf-8")
+					data = eval(data)
+					if data.get('errorCode') == None:
+						return http_reponse
+					else:
+						LOGGER.info("Api call error % time!"%(i+2))
+
 				LOGGER.info(data)
 				raise Exception("Api call error!")
 		return http_reponse

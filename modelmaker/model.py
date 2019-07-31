@@ -215,9 +215,9 @@ class ModelApiBase(with_metaclass(ABCMeta, object)):
 			if service_input == DEPLOY_SERVICE_PARAMS:
 					service_models_input = set(kwargs['service_models'][0].keys())
 					if 'resourcePoolType' not in service_models_input:
-						kwargs['service_models'][0]['resourcePoolType'] = "PUBLIC_POOL":
+						kwargs['service_models'][0]['resourcePoolType'] = "PUBLIC_POOL"
 					else:
-						kwargs['service_models'][0]['resourcePoolType'] not in ["PUBLIC_POOL","PERSONAL_POOL"]:
+						if kwargs['service_models'][0]['resourcePoolType'] not in ["PUBLIC_POOL","PERSONAL_POOL"]:
 							raise ValueError('resourcePoolType is must set PUBLIC_POOL or PERSONAL_POOL')
 					if 'weight' in service_models_input and 'resourceId' in service_models_input and 'instanceCount' in service_models_input:
 

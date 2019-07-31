@@ -112,14 +112,16 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 						LOGGER.info(status)
 					count_running = count_running + 1
 					if logs == True:
-						log_result = self._get_job_log(version_id=version_id, last_time=self.last_time, last_nan=self.last_nan)
+						#log_result = self._get_job_log_v2(version_id=version_id, last_time=self.last_time, last_nan=self.last_nan)
+						log_result = self._get_job_log(version_id=version_id, log_id=self.log_id)
 						if log_result.get('logs'):
 							log_msg = log_result['logs']
 							if len(log_msg):
 								for item in log_msg:
 									LOGGER.info(item['content'])
-								self.last_time = int(log_msg[-1]['time'])
-								self.last_nan = int(log_msg[-1]['nanTime'])
+								self.log_id = int(log_msg[-1]['id']) + 1
+								#self.last_time = int(log_msg[-1]['time'])
+								#self.last_nan = int(log_msg[-1]['nanTime'])
 							else:
 								pass
 								#self.log_id = log_result['logs'][0]['id']
@@ -260,7 +262,11 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		LOGGER.info(result)
 		return result
 
-	def _get_job_log(self, version_id, last_time, last_nan):
+	def _get_job_log(self, version_id, log_id):
+		result =  _TrainingJob.get_job_log(self, version_id, log_id)
+		return result
+
+	def _get_job_log_v2(self, version_id, last_time, last_nan):
 		result =  _TrainingJob.get_job_log_v2(self, version_id, last_time, last_nan)
 		return result
 
@@ -513,7 +519,7 @@ class _TrainingJob():
 		else:
 			if estimator.framework_type == "BASIC_FRAMEWORK":
 				## framwork parameter check
-				if estimator.boot_file and estimator.boot_type and estimator.framework and estimator.output_path and inputs and (estimator.code_dir or estimator.gitInfo):
+				if estimator.boot_file and estimator.framework and estimator.output_path and inputs and (estimator.code_dir or estimator.gitInfo):
 					_config['codeUrl'] = estimator.code_dir
 					_config['codeVersion'] = estimator.code_version
 					_config['gitInfo'] = estimator.git_info
@@ -526,8 +532,8 @@ class _TrainingJob():
 					_config['output'] = estimator.output_path
 					_config['monitors'] = estimator.monitors
 					_TrainingJob.s3_check_parameter([_config['dataUrl'],_config['output']])
-					if _config['startupType'] not in ['NORMAL','HOROVOD']:
-						raise ValueError("startupType must set  NORMAL or HOROVOD")
+					#if _config['startupType'] not in ['NORMAL','HOROVOD']:
+					#	raise ValueError("startupType must set  NORMAL or HOROVOD")
 					if _config['frameworkId'] is None:
 						raise ValueError("when framework_type=BASIC_FRAMEWORK , framework must set")
 					else:
