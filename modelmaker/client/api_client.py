@@ -134,7 +134,7 @@ class ApiClient(object):
 						if data.get('errorCode') == None:
 							return http_reponse
 						else:
-							LOGGER.info("Api call error % time!"%(i+2))
+							LOGGER.info("Api call error %s time!"%(i+2))
 					LOGGER.info(data)
 					raise Exception("Api call error!")
 			elif data['errorCode'] == 102009 or data['errorCode'] == 101009:
@@ -149,7 +149,7 @@ class ApiClient(object):
 					if data.get('errorCode') == None:
 						return http_reponse
 					else:
-						LOGGER.info("Api call error % time!"%(i+2))
+						LOGGER.info("Api call error %s time!"%(i+2))
 
 				LOGGER.info(data)
 				raise Exception("Api call error!")
