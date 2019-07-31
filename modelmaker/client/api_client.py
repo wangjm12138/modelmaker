@@ -125,27 +125,27 @@ class ApiClient(object):
 								header_params, body, auth_settings)
 				data = json.loads(http_reponse.data.decode('utf-8'))
 				if data.get('errorCode'):
-					LOGGER.info("Api call error 1 time!")
+					LOGGER.info("Api call error!")
 					for i in range(Retry):
 						http_reponse = self.__call_api(resource_path, method,
 											header_params, body, auth_settings)
 						if 200 <= http_reponse.status <= 299:
 							return http_reponse
 						else:
-							LOGGER.info("Api call error %s time!"%(i+2))
+							LOGGER.info("Api call error, retry %s time!"%(i+1))
 					LOGGER.info(data)
 					raise Exception("Api call error!")
 			elif data['errorCode'] == 102009 or data['errorCode'] == 101009:
 				pass
 			else:
-				LOGGER.info("Api call error 1 time!")
+				LOGGER.info("Api call error!")
 				for i in range(Retry):
 					http_reponse = self.__call_api(resource_path, method,
 										header_params, body, auth_settings)
 					if 200 <= http_reponse.status <= 299:
 						return http_reponse
 					else:
-						LOGGER.info("Api call error %s time!"%(i+2))
+						LOGGER.info("Api call error, retry %s time!"%(i+1))
 
 				LOGGER.info(data)
 				raise Exception("Api call error!")

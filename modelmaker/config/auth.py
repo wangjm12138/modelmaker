@@ -35,8 +35,8 @@ def get_temporary_aksk_without_commission(token, iam_url, verify_ssl=True):
 	LOGGER.debug("Get ak/sk>>>>>>>>>>>>>")
 	LOGGER.debug("url:"+url)
 	LOGGER.debug({'headers':headers})
-	for i in range(auth_Retry):
-		try:
+	try:
+		for i in range(auth_Retry):
 			response = requests.get(url, headers=headers, verify=verify_ssl)
 			if response.status_code > 300 and i == auth_Retry:
 				raise IAMException(code=response.status_code, message="Connect iam server error!!!")
@@ -50,10 +50,10 @@ def get_temporary_aksk_without_commission(token, iam_url, verify_ssl=True):
 				s3_mirror_auth = response.json()['mirror']['auth']
 				s3_mirror_endpoint_url = response.json()['mirror']['url']
 				return access_key,secret_key,s3_endpoint_url,s3_region,s3_mirror_auth,s3_mirror_endpoint_url
-		except IAMException:
-			raise IAMException(code=response.status_code, message="Connect iam server error!!!")
-		except Exception as e:
-			raise Exception(e)
+	except IAMException:
+		raise IAMException(code=response.status_code, message="Connect iam server error!!!")
+	except Exception as e:
+		raise Exception(e)
 
 def authorize_by_token(username, password, endpoint, verify_ssl=True):
 	"""
@@ -80,8 +80,8 @@ def authorize_by_token(username, password, endpoint, verify_ssl=True):
 	LOGGER.debug("Get Token>>>>>>>>>>>>>")
 	LOGGER.debug("url:"+url)
 	LOGGER.debug({'headers':headers,'body':body})
-	for i in range(auth_Retry):
-		try:
+	try:
+		for i in range(auth_Retry):
 			response = requests.post(url, headers=headers, verify=verify_ssl, data=json.dumps(body))
 			if response.status_code > 300 and i == auth_Retry:
 				raise IAMException(code=response.status_code, message="Connect iam server error,status:%s!!!"%(response.status_code))
@@ -93,8 +93,8 @@ def authorize_by_token(username, password, endpoint, verify_ssl=True):
 				#duration = response.json()['duration']
 				#return token, duration
 				return token
-		except IAMException:
-			raise IAMException(code=response.status_code, message="Connect iam server error!!!")
-		except Exception as e:
-			raise Exception(e)
+	except IAMException:
+		raise IAMException(code=response.status_code, message="Connect iam server error!!!")
+	except Exception as e:
+		raise Exception(e)
 
