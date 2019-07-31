@@ -129,9 +129,7 @@ class ApiClient(object):
 					for i in range(Retry):
 						http_reponse = self.__call_api(resource_path, method,
 											header_params, body, auth_settings)
-						data = str(http_reponse.data,encoding="utf-8")
-						data = eval(data)
-						if data.get('errorCode') == None:
+						if 200 <= http_reponse.status <= 299:
 							return http_reponse
 						else:
 							LOGGER.info("Api call error %s time!"%(i+2))
@@ -144,9 +142,7 @@ class ApiClient(object):
 				for i in range(Retry):
 					http_reponse = self.__call_api(resource_path, method,
 										header_params, body, auth_settings)
-					data = str(http_reponse.data,encoding="utf-8")
-					data = eval(data)
-					if data.get('errorCode') == None:
+					if 200 <= http_reponse.status <= 299:
 						return http_reponse
 					else:
 						LOGGER.info("Api call error %s time!"%(i+2))

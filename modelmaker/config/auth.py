@@ -10,7 +10,7 @@ logging.basicConfig()
 LOGGER = logging.getLogger('modelmaker-sdk/auth')
 LOGGER_LEVEL = os.getenv("MODELMAKER_LEVEL", logging.INFO) #cloud
 LOGGER.setLevel(int(LOGGER_LEVEL))
-
+auth_Retry=3
 def get_temporary_aksk_without_commission(token, iam_url, verify_ssl=True):
 	"""get IAM's temporary AK/SK without commission which lasts for 24h
 		:return: {
@@ -35,22 +35,25 @@ def get_temporary_aksk_without_commission(token, iam_url, verify_ssl=True):
 	LOGGER.debug("Get ak/sk>>>>>>>>>>>>>")
 	LOGGER.debug("url:"+url)
 	LOGGER.debug({'headers':headers})
-	try:
-		response = requests.get(url, headers=headers, verify=verify_ssl)
-		if response.status_code > 300:
+	for i in range(auth_Retry):
+		try:
+			response = requests.get(url, headers=headers, verify=verify_ssl)
+			if response.status_code > 300 and i == auth_Retry:
+				raise IAMException(code=response.status_code, message="Connect iam server error!!!")
+			elif response.status_code > 300 and i < auth_Retry:
+				LOGGER.info("Connect iam server error,http status:%s, retry %s time !!!"%(response.status_code,i))
+			else:
+				access_key = response.json()['s3']['ak']
+				secret_key = response.json()['s3']['sk']
+				s3_endpoint_url = response.json()['s3']['url']
+				s3_region = response.json()['s3']['region']
+				s3_mirror_auth = response.json()['mirror']['auth']
+				s3_mirror_endpoint_url = response.json()['mirror']['url']
+				return access_key,secret_key,s3_endpoint_url,s3_region,s3_mirror_auth,s3_mirror_endpoint_url
+		except IAMException:
 			raise IAMException(code=response.status_code, message="Connect iam server error!!!")
-		else:
-			access_key = response.json()['s3']['ak']
-			secret_key = response.json()['s3']['sk']
-			s3_endpoint_url = response.json()['s3']['url']
-			s3_region = response.json()['s3']['region']
-			s3_mirror_auth = response.json()['mirror']['auth']
-			s3_mirror_endpoint_url = response.json()['mirror']['url']
-			return access_key,secret_key,s3_endpoint_url,s3_region,s3_mirror_auth,s3_mirror_endpoint_url
-	except IAMException:
-		raise IAMException(code=response.status_code, message="Connect iam server error!!!")
-	except Exception as e:
-		raise Exception(e)
+		except Exception as e:
+			raise Exception(e)
 
 def authorize_by_token(username, password, endpoint, verify_ssl=True):
 	"""
@@ -77,18 +80,21 @@ def authorize_by_token(username, password, endpoint, verify_ssl=True):
 	LOGGER.debug("Get Token>>>>>>>>>>>>>")
 	LOGGER.debug("url:"+url)
 	LOGGER.debug({'headers':headers,'body':body})
-	try:
-		 response = requests.post(url, headers=headers, verify=verify_ssl, data=json.dumps(body))
-		 if response.status_code > 300:
-			 raise IAMException(code=response.status_code, message="Connect iam server error!!!")
-		 else:
-			 result = response.json()
-			 token = response.json()['token']
-			 #duration = response.json()['duration']
-			 #return token, duration
-			 return token
-	except IAMException:
-		 raise IAMException(code=response.status_code, message="Connect iam server error!!!")
-	except Exception as e:
-		 raise Exception(e)
+	for i in range(auth_Retry):
+		try:
+			response = requests.post(url, headers=headers, verify=verify_ssl, data=json.dumps(body))
+			if response.status_code > 300 and i == auth_Retry:
+				raise IAMException(code=response.status_code, message="Connect iam server error,status:%s!!!"%(response.status_code))
+			elif response.status_code > 300 and i < auth_Retry:
+				LOGGER.info("Connect iam server error,http status:%s, retry %s time !!!"%(response.status_code,i))
+			else:
+				result = response.json()
+				token = response.json()['token']
+				#duration = response.json()['duration']
+				#return token, duration
+				return token
+		except IAMException:
+			raise IAMException(code=response.status_code, message="Connect iam server error!!!")
+		except Exception as e:
+			raise Exception(e)
 
