@@ -34,20 +34,12 @@ class Predictor(object):
 	def info(self, service_id = None):
 		""" Get the deployed model service information
 		Args:
-			session: Building interactions with Wangsu Cloud Service.
-			project_id: User project id ,getting from Wangsu Cloud console
 			service_id: The deployed model service id
 		return: The deployed service information,including model service access address.
 		"""
 		result = self.predictor_instance.get_service_info(service_id)
 		LOGGER.info(json.loads(result.data.decode('utf-8')))
-
-#	 def predict(self, data, data_type):
-#		 """
-#		 data(object):	Input data for which you want the model to provide inference.
-#		 data_type: support {files, images}
-#		 """
-#		 return self.predictor_instance.predict(data, data_type)
+		return json.loads(result.data.decode('utf-8'))
 
 	def info_list(self):
 		"""
@@ -55,36 +47,37 @@ class Predictor(object):
 		"""
 		result = self.predictor_instance.get_service_list()
 		LOGGER.info(json.loads(result.data.decode('utf-8')))
+		return json.loads(result.data.decode('utf-8'))
 
 	def start(self, service_id=None):
 		""" change a service state.
 		Args:
-			node_id: node id
-			action_body: Operate type, {start,stop, run}
-		return: Service stop or start tasks result.
+			service_id: service_id
+		return: Service start tasks result.
 		"""
 		result = self.predictor_instance.change_service_state('start', service_id=service_id)
 		LOGGER.info(json.loads(result.data.decode('utf-8')))
+		return json.loads(result.data.decode('utf-8'))
 
 	def stop(self, service_id=None):
 		""" change a service state.
 		Args:
-			node_id: node id
-			action_body: Operate type, {start,stop, run}
-		return: Service stop or start tasks result.
+			service_id: service_id
+		return: Service stop tasks result.
 		"""
 		result = self.predictor_instance.change_service_state('stop', service_id=service_id)
 		LOGGER.info(json.loads(result.data.decode('utf-8')))
+		return json.loads(result.data.decode('utf-8'))
 
 	def delete(self, service_id=None):
 		""" change a service state.
 		Args:
-			node_id: node id
-			action_body: Operate type, {start,stop, run}
-		return: Service stop or start tasks result.
+			service_id: service_id
+		return: Service delete tasks result.
 		"""
-		result = self.predictor_instance.delete(service_id=service_id)
+		result = self.predictor_instance.delete_request(service_id=service_id)
 		LOGGER.info(json.loads(result.data.decode('utf-8')))
+		return json.loads(result.data.decode('utf-8'))
 
 #	def update_service_config(self, service_id=None, **config_body):
 #		""" update a service configuration
@@ -211,19 +204,6 @@ class PredictorApiAccountImpl(PredictorApiBase):
 		body={}
 		return self.service_api.get_service_info(self.session.project_id, body=body, service_id=service_id)
 
-#	 def predict(self, data, data_type):
-#		 """
-#		 data(object):	Input data for which you want the model to provide inference.
-#		 data_type: support {files,images}
-#		 """
-#		 self.service_info = self.get_service_info()
-#		 self.session.client.configuration.host = self.service_info.access_address
-#
-#		 infers_image_api = InfersImageApi(self.session.client)
-#		 infer_image_result = infers_image_api.service_model_reasoning_images(images=data)
-#
-#		 return infer_image_result
-#
 	def get_service_list(self):
 		"""
 		return User service list
@@ -231,19 +211,39 @@ class PredictorApiAccountImpl(PredictorApiBase):
 		body={}
 		return self.service_api.get_service_info(self.session.project_id, body=body, service_id=None)
 
+	def info(self, service_id = None):
+		""" Get the deployed model service information
+		Args:
+			service_id: The deployed model service id
+		return: The deployed service information,including model service access address.
+		"""
+		result = self.get_service_info(service_id)
+		LOGGER.info(json.loads(result.data.decode('utf-8')))
+		return json.loads(result.data.decode('utf-8'))
+
+	def info_list(self):
+		"""
+		return User service list
+		"""
+		result = self.get_service_list()
+		LOGGER.info(json.loads(result.data.decode('utf-8')))
+		return json.loads(result.data.decode('utf-8'))
+
 	def start(self, service_id=None):
 		result = self.change_service_state('start', service_id=None)	
-		print(json.loads(result.data.decode('utf-8')))
+		LOGGER.info(json.loads(result.data.decode('utf-8')))
+		return json.loads(result.data.decode('utf-8'))
 
 	def stop(self, service_id=None):
 		result = self.change_service_state('stop', service_id=None)	
-		print(json.loads(result.data.decode('utf-8')))
+		LOGGER.info(json.loads(result.data.decode('utf-8')))
+		return json.loads(result.data.decode('utf-8'))
 
 	def change_service_state(self, action_body, service_id=None):
 		""" change a service state.
 		Args:
-			node_id: node id
-			action_body: Operate type, {start, stop, run}
+			service_id: service_id
+			action_body: Operate type, {start, stop}
 		return: Service stop or start tasks result.
 		"""
 		if service_id is None and self.service_id:
@@ -255,17 +255,27 @@ class PredictorApiAccountImpl(PredictorApiBase):
 		body = {}
 		return self.service_api.operate_a_service(self.session.project_id, body, service_id, action_body)
 
-	def delete(self, service_id=None):
+	def delete_request(self, service_id=None):
 		""" change a service state.
 		Args:
-			node_id: node id
-			action_body: Operate type, {start, stop, run}
-		return: Service stop or start tasks result.
+			service_id: service_id
+		return: Service delete tasks result.
 		"""
 		if service_id is None:
 			service_id = self.service_id
 		body = {}
 		return	self.service_api.delete_micro_service(project_id=self.session.project_id, body=body, service_id=service_id)
+
+	def delete(self, service_id=None):
+		""" change a service state.
+		Args:
+			service_id: service_id
+		return: Service delete tasks result.
+		"""
+		result = self.delete_request(service_id=service_id)
+		LOGGER.info(json.loads(result.data.decode('utf-8')))
+		return json.loads(result.data.decode('utf-8'))
+
 
 #	def update_service_config(self, service_id=None, **config_body):
 #		""" update a service configuration

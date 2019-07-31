@@ -132,16 +132,18 @@ class Model(object):
 
 	def get_service_id(self):
 
-		return LOGGER.info(self.service_id)
+		LOGGER.info(self.service_id)
+		return self.service_id
 
 	def get_model_version_id(self):
 
-		return LOGGER.info(self.model_version_id)
-
+		LOGGER.info(self.model_version_id)
+		return self.model_version_id
 
 	def get_model_id(self):
 
-		return LOGGER.info(self.model_id)
+		LOGGER.info(self.model_id)
+		return self.model_id
 
 class ModelApiBase(with_metaclass(ABCMeta, object)):
 	""" A ModelMaker Model that can be created model, deployed model service and delete model endpoint. """
@@ -664,13 +666,6 @@ class ModelApiAccountImpl(ModelApiBase):
 		body={}
 		return self.model_api.get_model_version_info(project_id=self.session.project_id, model_version_id=model_version_id, body=body)
 
-
-#	def _get_service_list(self):
-#		"""
-#		return User service list
-#		"""
-#		return self.service_api.get_service_list(project_id=self.session.project_id)
-#
 	def _get_service_info(self):
 		"""
 		return: the service information
