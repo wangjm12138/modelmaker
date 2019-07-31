@@ -19,11 +19,13 @@ ISOTIMEFORMAT = '%m%d-%H%M%S'
 class EstimatorBase(with_metaclass(ABCMeta, object)):
 
 	def __init__(self, modelmaker_session, train_instance_count=None, train_instance_type=None, volume_size=None,
-				 output_path=None, max_runtime=None,**kwargs):
+				 output_path=None, max_runtime=None, resource_pool_type=None, custom_resource=None, **kwargs):
 
 		self.modelmaker_session = modelmaker_session
 		self.train_instance_count = train_instance_count
 		self.train_instance_type = train_instance_type
+		self.resource_pool_type = resource_pool_type
+		self.custom_resource = custom_resource
 		self.volume_size = volume_size
 		self.max_runtime = max_runtime
 		self.output_path = output_path
@@ -34,6 +36,8 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 #		 self.project_id = modelmaker_session.project_id
 		self.model_api = Model(modelmaker_session)
 		self.log_id = 0
+		self.last_time = 0
+		self.last_nan = 0
 
 	def _prepare_for_training(self, job_name=None):
 		if job_name is not None:
@@ -108,13 +112,14 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 						LOGGER.info(status)
 					count_running = count_running + 1
 					if logs == True:
-						log_result = self._get_job_log(version_id=version_id, log_id=self.log_id)
+						log_result = self._get_job_log(version_id=version_id, last_time=self.last_time, last_nan=self.last_nan)
 						if log_result.get('logs'):
 							log_msg = log_result['logs']
 							if len(log_msg):
 								for item in log_msg:
 									LOGGER.info(item['content'])
-								self.log_id = int(log_msg[-1]['id']) + 1
+								self.last_time = int(log_msg[-1]['time'])
+								self.last_nan = int(log_msg[-1]['nanTime'])
 							else:
 								pass
 								#self.log_id = log_result['logs'][0]['id']
@@ -255,8 +260,20 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		LOGGER.info(result)
 		return result
 
-	def _get_job_log(self, version_id, log_id):
-		result =  _TrainingJob.get_job_log(self, version_id, log_id)
+	def _get_job_log(self, version_id, last_time, last_nan):
+		result =  _TrainingJob.get_job_log_v2(self, version_id, last_time, last_nan)
+		return result
+
+	def log_v2(self, last_time, last_nan, version_id=None):
+		if version_id is None:
+			if hasattr(self,'version_id'):
+				version_id = self.version_id
+			else:
+				LOGGER.error("please use fit() method first or version_id is need!!!")
+				return
+
+		result =  _TrainingJob.get_job_log_v2(self, version_id, last_time, last_nan)
+		LOGGER.info(result)
 		return result
 
 	def log(self, log_id,version_id=None):
@@ -451,6 +468,7 @@ class _TrainingJob():
 	def prepare_config(cls, estimator, inputs):
 		Framework = ["TensorFlow-1.13.1-python3.5","MXNET-python3.5","Caffe-python3.5"]
 		Framework_type = ["BASIC_FRAMEWORK","PRESET_ALGORITHM","CUSTOM"]
+		custom_resource = {'cpu','memory','gpuModel','gpuCount'}
 		_config = {}
 		_config['name'] = estimator.job_name
 		_config['type'] = estimator.framework_type
@@ -471,27 +489,45 @@ class _TrainingJob():
 		if estimator.train_instance_type is None:
 			raise ValueError("train_instance_type must set!")
 	
+		if estimator.resource_pool_type is None:
+			_config['resourcePoolType'] = "PUBLIC_POOL"
+		else:
+			_config['resourcePoolType'] = estimator.resource_pool_type
+
+		if _config['resourcePoolType'] == "PUBLIC_POOL":
+			_config['customResource'] = None
+		else:
+			if isinstance(estimator.custom_resource,dict) and set(estimator.custom_resource.keys()) == custom_resource:
+				_config['customResource'] = estimator.custom_resource
+			else:
+				raise ValueError("Format like : customResource={'cpu':1,'memory':1,'gpuModel':'model','gpuCount':1}")
+
 		_config['resourceId'] = estimator.train_instance_type
 		_config['volumeSize'] = estimator.volume_size
 		_config['instance'] = estimator.train_instance_count
 		_config['maxRuntime'] = estimator.max_runtime
+		_config['description'] = estimator.description
 		## framwork check
 		if estimator.framework_type == None or estimator.framework_type not in Framework_type:
 			 raise ValueError('framework_type is must setted in "BASIC_FRAMEWORK","PRESET_ALGORITHM","CUSTOM" ')
 		else:
 			if estimator.framework_type == "BASIC_FRAMEWORK":
 				## framwork parameter check
-				if estimator.boot_file and estimator.framework and estimator.output_path and inputs and (estimator.code_dir or estimator.gitInfo):
+				if estimator.boot_file and estimator.boot_type and estimator.framework and estimator.output_path and inputs and (estimator.code_dir or estimator.gitInfo):
 					_config['codeUrl'] = estimator.code_dir
+					_config['codeVersion'] = estimator.code_version
 					_config['gitInfo'] = estimator.git_info
 					_config['frameworkId'] = estimator.framework
 					_config['startup'] = estimator.boot_file
+					_config['startupType'] = estimator.boot_type
 					_config['parameters'] = estimator.hyperparameters
 					_config['inputFiles'] = estimator.input_files
 					_config['dataUrl'] = inputs
 					_config['output'] = estimator.output_path
 					_config['monitors'] = estimator.monitors
 					_TrainingJob.s3_check_parameter([_config['dataUrl'],_config['output']])
+					if _config['startupType'] not in ['NORMAL','HOROVOD']:
+						raise ValueError("startupType must set  NORMAL or HOROVOD")
 					if _config['frameworkId'] is None:
 						raise ValueError("when framework_type=BASIC_FRAMEWORK , framework must set")
 					else:
@@ -677,6 +713,20 @@ class _TrainingJob():
 		return data
 
 	@classmethod
+	def get_job_log_v2(cls, estimator, version_id, last_time, last_nan):
+		project_id = estimator.modelmaker_session.project_id
+		client = estimator.modelmaker_session.client
+
+		body={}
+		if estimator.modelmaker_session.auth == 'token':
+			train_job_api = TrainJobApi(estimator.modelmaker_session.client)
+			res = train_job_api.training_job_log_v2(project_id=project_id, version_id=version_id, last_time=last_time, last_nan=last_nan, body=body)
+			data = json.loads(res.data.decode('utf-8'))
+		else:
+			data = 1
+		return data
+
+	@classmethod
 	def get_job_log(cls, estimator, version_id, log_id):
 		project_id = estimator.modelmaker_session.project_id
 		client = estimator.modelmaker_session.client
@@ -777,12 +827,14 @@ class _TrainingJob():
 
 class Estimator(EstimatorBase):
 
-	def __init__(self, code_dir=None, boot_file=None, hyperparameters=None, framework = None, framework_type=None, algorithm=None, 
+	def __init__(self, code_dir=None, code_version=None, boot_file=None, boot_type=None, hyperparameters=None, framework = None, framework_type=None, algorithm=None, 
 				 input_files=None, model_name=None, init_model=None, env=None, user_image_url=None, user_command=None, user_command_args=None,
-				 monitors=None, job_description=None, git_info=None, **kwargs):
+				 monitors=None, job_description=None, git_info=None, description=None, **kwargs):
 
 		self.code_dir = code_dir
+		self.code_version = code_version
 		self.boot_file = boot_file
+		self.boot_type = boot_type
 		self.hyperparameters = hyperparameters or []
 		self.framework = framework
 		self.framework_type = framework_type
@@ -797,6 +849,7 @@ class Estimator(EstimatorBase):
 		self.monitors = monitors
 		self.git_info = git_info
 		self.job_description = job_description
+		self.description = description
 
 		super(Estimator, self).__init__(**kwargs)
 

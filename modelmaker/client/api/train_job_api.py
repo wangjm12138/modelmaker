@@ -122,6 +122,30 @@ class TrainJobApi(object):
 			body=body,
 			auth_settings=auth_settings)
 
+	def training_job_log_v2(self, project_id, version_id, body, last_time, last_nan, **kwargs):
+		kwargs['_return_http_data_only'] = True
+		(data) = self.training_job_log_with_http_info_v2(project_id, version_id, body, last_time, last_nan, **kwargs)
+		return data
+
+	def training_job_log_with_http_info(self, project_id, version_id, body, last_time, last_nan, **kwargs):
+
+		header_params = {}
+		# HTTP header `Accept`
+		header_params['Accept'] = self.api_client.select_header_accept(
+			['application/json'])
+
+		# HTTP header `Content-Type`
+		header_params['Content-Type'] = self.api_client.select_header_content_type(
+			['application/json'])
+
+		# Authentication setting
+		auth_settings = ['ApiTokenAuth']
+		return self.api_client.call_api(
+			'/v1/train/version/%s/log?lastTime=%s&lastNan=%s'%(str(version_id),str(last_time),str(last_nan)), 'GET',
+			header_params,
+			body=body,
+			auth_settings=auth_settings)
+
 	def training_job_log(self, project_id, version_id, body, log_id, **kwargs):
 		kwargs['_return_http_data_only'] = True
 		(data) = self.training_job_log_with_http_info(project_id, version_id, body, log_id, **kwargs)

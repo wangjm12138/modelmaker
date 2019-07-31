@@ -69,6 +69,16 @@ class Predictor(object):
 		LOGGER.info(json.loads(result.data.decode('utf-8')))
 		return json.loads(result.data.decode('utf-8'))
 
+	def update(self, service_id=None):
+		""" change a service state.
+		Args:
+			service_id: service_id
+		return: Service update tasks result.
+		"""
+		result = self.predictor_instance.update_request(service_id=service_id)
+		LOGGER.info(json.loads(result.data.decode('utf-8')))
+		return json.loads(result.data.decode('utf-8'))
+
 	def delete(self, service_id=None):
 		""" change a service state.
 		Args:
@@ -254,6 +264,22 @@ class PredictorApiAccountImpl(PredictorApiBase):
 			raise ValueError("service_id is need")
 		body = {}
 		return self.service_api.operate_a_service(self.session.project_id, body, service_id, action_body)
+
+	def update_request(self, service_id=None):
+		""" change a service state.
+		Args:
+			service_id: service_id
+		return: Service update tasks result.
+		"""
+		if service_id is None:
+			service_id = self.service_id
+		body = {}
+		return	self.service_api.update_micro_service(project_id=self.session.project_id, body=body, service_id=service_id)
+
+	def update(self, service_id=None):
+		result = self.update_request(service_id=service_id)
+		LOGGER.info(json.loads(result.data.decode('utf-8')))
+		return json.loads(result.data.decode('utf-8'))
 
 	def delete_request(self, service_id=None):
 		""" change a service state.

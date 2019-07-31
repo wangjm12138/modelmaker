@@ -55,6 +55,13 @@ class Model(object):
 		self.model_version_id = self.model_instance.model_version_id
 		return json.loads(model_create_resp.data.decode('utf-8'))
 
+#	def update_model(self, model_version_id = None, **kwargs):
+#		result  = self.model_instance.update_model_version(model_version_id = model_version_id)
+#		result = json.loads(result.data.decode('utf-8'))
+#		LOGGER.info(result)
+#		return result
+
+
 	def deploy_predictor(self, **kwargs):
 		""" Deploying model predictor interface
 			Args:
@@ -102,33 +109,37 @@ class Model(object):
 	def predict_framework(self):
 
 		result = self.model_instance.get_predict_framework_list()
-		result  = json.loads(result.data.decode('utf-8'))
+		result = json.loads(result.data.decode('utf-8'))
 		LOGGER.info(result)
 		return result
 
 	def destory_model(self, model_id = None):
 
 		result = self.model_instance.delete_model(model_id = model_id)
-		LOGGER.info(json.loads(result.data.decode('utf-8')))
+		result = json.loads(result.data.decode('utf-8'))
+		LOGGER.info(result)
+		return result
 
 	def destory_model_version(self, model_version_id = None):
 		
 		result  = self.model_instance.delete_model_version(model_version_id = model_version_id)
-		LOGGER.info(json.loads(result.data.decode('utf-8')))
+		result = json.loads(result.data.decode('utf-8'))
+		LOGGER.info(result)
+		return result
 
 	def delete_model(self, model_version_id = None):
 		
 		result  = self.model_instance.delete_model_version(model_version_id = model_version_id)
-		LOGGER.info(json.loads(result.data.decode('utf-8')))
-
-#	def delete_model_endpoint(self, model_id=None, service_id=None):
-#
-#		self.model_instance.delete_model_endpoint(model_id=model_id, service_id=service_id)
+		result = json.loads(result.data.decode('utf-8'))
+		LOGGER.info(result)
+		return result
 
 	def delete_service(self, service_id=None):
 
 		result = self.model_instance.delete_service(service_id = service_id)
-		LOGGER.info(json.loads(result.data.decode('utf-8')))
+		result = json.loads(result.data.decode('utf-8'))
+		LOGGER.info(result)
+		return result
 
 	def get_service_id(self):
 
@@ -203,6 +214,11 @@ class ModelApiBase(with_metaclass(ABCMeta, object)):
 			service_input = set(kwargs.keys())
 			if service_input == DEPLOY_SERVICE_PARAMS:
 					service_models_input = set(kwargs['service_models'][0].keys())
+					if 'resourcePoolType' not in service_models_input:
+						kwargs['service_models'][0]['resourcePoolType'] = "PUBLIC_POOL":
+					else:
+						kwargs['service_models'][0]['resourcePoolType'] not in ["PUBLIC_POOL","PERSONAL_POOL"]:
+							raise ValueError('resourcePoolType is must set PUBLIC_POOL or PERSONAL_POOL')
 					if 'weight' in service_models_input and 'resourceId' in service_models_input and 'instanceCount' in service_models_input:
 
 						if 'modelVersionId' not in service_models_input and self.model_version_id:
