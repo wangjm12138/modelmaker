@@ -38,10 +38,10 @@ def get_temporary_aksk_without_commission(token, iam_url, verify_ssl=True):
 	try:
 		for i in range(auth_Retry):
 			response = requests.get(url, headers=headers, verify=verify_ssl)
-			if response.status_code > 300 and i == auth_Retry:
+			if response.status_code > 300 and i == auth_Retry-1:
 				raise IAMException(code=response.status_code, message="Connect iam server error!!!")
 			elif response.status_code > 300 and i < auth_Retry:
-				LOGGER.info("Connect iam server error,http status:%s, retry %s time !!!"%(response.status_code,i))
+				LOGGER.info("Connect iam server error,http status:%s, retry %s time !!!"%(response.status_code,i+1))
 			else:
 				access_key = response.json()['s3']['ak']
 				secret_key = response.json()['s3']['sk']
@@ -83,10 +83,10 @@ def authorize_by_token(username, password, endpoint, verify_ssl=True):
 	try:
 		for i in range(auth_Retry):
 			response = requests.post(url, headers=headers, verify=verify_ssl, data=json.dumps(body))
-			if response.status_code > 300 and i == auth_Retry:
+			if response.status_code > 300 and i == auth_Retry-1:
 				raise IAMException(code=response.status_code, message="Connect iam server error,status:%s!!!"%(response.status_code))
 			elif response.status_code > 300 and i < auth_Retry:
-				LOGGER.info("Connect iam server error,http status:%s, retry %s time !!!"%(response.status_code,i))
+				LOGGER.info("Connect iam server error,http status:%s, retry %s time !!!"%(response.status_code,i+1))
 			else:
 				result = response.json()
 				token = response.json()['token']
