@@ -1,0 +1,137 @@
+{
+	"title": "Train Basic Framework",
+	"description": "This is for Train Basic Framework api parameter check",
+    "type": "object",
+    "properties": {
+		"name": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 64
+		},
+		"type": {
+				"type": "string",
+				"pattern": "BASIC_FRAMEWORK"
+		},
+		"frameworkId": {
+				"type": "number"
+		},
+		"codeUrl": {
+				"type": "string"
+		},
+		"codeVersion": {
+				"anyOf": [
+					{"type": "string"},
+					{"type": "null"}
+				]
+		},
+		"gitInfo": {
+				"anyOf" :[
+					{"type": "null"},
+					{"type": "object",
+						"properties": {
+								"username": {
+										"type": "string"
+								},
+								"password": {
+										"type": "string"
+								},
+								"branch": {
+										"type": "string"
+								}
+						}
+					}
+				]
+		},
+		"startup": {
+				"type": "string"
+		},
+		"startupType": {
+				"anyOf" : [
+					{"type": "string","enum": ["NORMAL","HOROVOD"]},
+					{"type": "null"}
+				]
+		},
+		"parameters": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "array",
+						"item": {
+							"type": "object"
+						}
+					}
+				]
+		},
+		"inputFiles": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "array",
+						"item": {
+								"type": "object"
+						}
+					}
+				]
+		},
+		"dataUrl": {
+				"anyOf": [
+					{"type": "array",
+						"item":{
+							"type": "string",
+							"pattern": "^s3://"
+						}
+					},
+					{"type": "string","pattern": "^s3://"}
+				]
+		},
+		"output": {
+				"type": "string",
+				"pattern": "^s3://"
+		},
+		"monitors": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "array",
+						"item": {
+							"type": "object"
+						}
+					}
+				]
+		},
+		"resourceId": {
+				"type": "number"
+		},
+		"volumeSize": {
+				"type": "number",
+				"minimum": 1,
+				"maximum": 100,
+				"multipleof": 1
+		},
+		"instance": {
+				"type": "number",
+				"minimum": 1,
+				"maximum": 100,
+				"multipleof": 1
+		},
+		"maxRuntime": {
+				"anyOf": [
+					{"type": "number"},
+					{"type": "null"}
+				]
+		},
+		"isFlowInput": {
+				"anyOf": [
+					{"type": "number"},
+					{"type": "null"}
+				]
+		},
+		"description": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "string",
+						"minLength": 1,
+						"maxLength": 128
+					}
+				]
+		}
+    },
+	"required": ["name","frameworkId","codeUrl","startup","startupType","dataUrl","output","resourceId","volumeSize","instance"]
+}

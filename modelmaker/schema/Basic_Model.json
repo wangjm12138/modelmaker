@@ -1,0 +1,55 @@
+{
+	"title": "Train Basic Model",
+	"description": "This is for Train Basic Model api parameter check",
+    "type": "object",
+    "properties": {
+		"name": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 64
+		},
+		"type": {
+				"type": "string",
+				"pattern": "BASIC_FRAMEWORK"
+		},
+		"version": {
+				"type": "string"
+		},
+		"frameworkId": {
+				"type": "number"
+		},
+		"modelPath": {
+				"type": "string",
+				"pattern": "^s3://"
+		},
+		"codeUrl": {
+				"type": "string",
+				"pattern": "^s3://"
+		},
+        "gitInfo": {
+                "anyOf" :[
+                    {"type": "null"},
+                    {"type": "object",
+                        "properties": {
+                                "username": {
+                                        "type": "string"
+                                },
+                                "password": {
+                                        "type": "string"
+                                },
+                                "branch": {
+                                        "type": "string"
+                                }
+                        }
+                    }
+                ]
+        },
+		"startup": {
+				"type": "string"
+		},
+		"callSpecs": {
+				"type": "string"
+		}
+    },
+	"required": ["name","type","version","presetModelId","modelPath","codeUrl"]
+}

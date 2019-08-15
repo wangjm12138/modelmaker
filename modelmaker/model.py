@@ -3,12 +3,15 @@ import os
 from datetime import datetime, timedelta
 from .client.api import *
 from .predictor import *
+from .schema import Schema_json
 #============================
 import json
 import logging
 from six import with_metaclass
 from abc import ABCMeta, abstractmethod
 from json import JSONEncoder
+from jsonschema import validate
+import pdb
 
 logging.basicConfig()
 LOGGER = logging.getLogger('modelmaker-sdk/Model')
@@ -31,18 +34,34 @@ class Model(object):
 	A ModelMaker Model that can be created model, deployed model service,
 	got model info and list, and deleted model and service endpoint.
 	"""
-	def __init__(self, session):
+	#def __init__(self, session):
+	def __init__(self, model_name=None, model_version=None, model_path=None, model_framework=None, model_framework_type=None,
+				 model_code_dir=None, model_boot_file=None, model_call_specs=None, model_description=None, model_mirrorUrl=None,
+				 model_git_info=None,**kwargs):
 		"""
 		Initialize a model, determine the model authorize type.
 		param session: Building interactions with Wangsu Cloud service.
 		"""
-		self.session = session
+		self.model_name = model_name
+		self.model_version = model_version
+		self.model_path = model_path
+		self.model_framework = model_framework
+		self.model_framework_type = model_framework_type
+		self.model_code_dir = model_code_dir
+		self.model_boot_file = model_boot_file
+		self.model_call_specs = model_call_specs
+		self.model_description = model_description
+		self.model_mirrorUrl = model_mirrorUrl
+		self.model_git_info = model_git_info
+
+		#self.session = session
 		self.service_id = None
 		self.model_id	= None
 		self.model_version_id = None
 		self.model_instance = ModelApiAccountImpl(self.session)
 
-	def create_model(self, **kwargs):
+	#def create_model(self, **kwargs):
+	def create_model(self):
 		""" creating model interface
 		Args:
 			kwargs: Create model body params
@@ -202,13 +221,13 @@ class ModelApiBase(with_metaclass(ABCMeta, object)):
 		"""
 		if flag == 1:
 			Framework_type = ["BASIC_FRAMEWORK","PRESET_MODEL","CUSTOM"]
-			config_set = set(kwargs.keys()) - CREATE_MODEL_PARAMS
-			if len(config_set) == 0:
-				if kwargs['model_framework_type'] == None or kwargs['model_framework_type'] not in Framework_type:
+			#config_set = set(kwargs.keys()) - CREATE_MODEL_PARAMS
+			#if len(config_set) == 0:
+			if kwargs['model_framework_type'] == None or kwargs['model_framework_type'] not in Framework_type:
 					raise ValueError('framework_type is must setted in "BASIC_FRAMEWORK","PRESET_MODEL","CUSTOM" ')
-				else:
-					self._generate_model_params(model_params=kwargs)
 			else:
+				self._generate_model_params(model_params=kwargs)
+			#else:
 				raise ValueError('The input params: %s for creating model is surplus' % config_set)
 		elif flag == 2:
 			service_input = set(kwargs.keys())
@@ -249,30 +268,30 @@ class ModelApiBase(with_metaclass(ABCMeta, object)):
 		"""
 		_config = {}
 		if model_params['model_framework_type'] == "BASIC_FRAMEWORK":
-			if model_params.get('model_name') and model_params.get('model_framework_type') and model_params.get('model_version') \
-							and model_params.get('model_framework') and model_params.get('model_path') and (model_params.get('model_code_dir') or model_params.get('model_git_info')):
-
-				_config['name'] = model_params['model_name']
-				_config['type'] = model_params['model_framework_type']
-				_config['version'] = model_params['model_version']
-				_config['frameworkId'] = model_params['model_framework']
-				_config['modelPath'] = model_params['model_path']
-				result = self.get_predict_framework_list()
-				result = json.loads(result.data.decode('utf-8'))
-				frameworkId_list = [ item['id'] for item in result['frameWorks']]
-				if _config['frameworkId'] not in frameworkId_list:
-					raise ValueError("model_framwork is not exist, please check it!")
-				if 'model_code_dir' in model_params:
-					_config['codeUrl'] = ModelApiBase.s3_user_code_upload(self.session, model_params['model_code_dir'])
-				if 'model_git_info' in model_params:
-					_config['gitInfo'] = model_params['model_git_info']
-				if 'model_boot_file' in model_params:
-					_config['startup'] = model_params['model_boot_file']
-				if 'model_call_specs' in model_params:
-					_config['callSpecs'] = model_params['model_call_specs']
-			else:
-				raise ValueError("when model_framework_type = BASIC_FRAMEWORK is set, model_<name|version|framework|path|code_dir/gitInfo]> must set")
-
+			#if model_params.get('model_name') and model_params.get('model_framework_type') and model_params.get('model_version') \
+			#				and model_params.get('model_framework') and model_params.get('model_path') and (model_params.get('model_code_dir') or model_params.get('model_git_info')):
+			validate(instance=model_params,schema=Schema_json.Basic_Model)
+			#_config['name'] = model_params['model_name']
+			#_config['type'] = model_params['model_framework_type']
+			#_config['version'] = model_params['model_version']
+			#_config['frameworkId'] = model_params['model_framework']
+			#_config['modelPath'] = model_params['model_path']
+			#result = self.get_predict_framework_list()
+			#result = json.loads(result.data.decode('utf-8'))
+			#frameworkId_list = [ item['id'] for item in result['frameWorks']]
+			#if _config['frameworkId'] not in frameworkId_list:
+			#	raise ValueError("model_framwork is not exist, please check it!")
+			#if 'model_code_dir' in model_params:
+			#	_config['codeUrl'] = ModelApiBase.s3_user_code_upload(self.session, model_params['model_code_dir'])
+			#if 'model_git_info' in model_params:
+			#	_config['gitInfo'] = model_params['model_git_info']
+			#if 'model_boot_file' in model_params:
+			#	_config['startup'] = model_params['model_boot_file']
+			#if 'model_call_specs' in model_params:
+			#	_config['callSpecs'] = model_params['model_call_specs']
+			#else:
+			#	raise ValueError("when model_framework_type = BASIC_FRAMEWORK is set, model_<name|version|framework|path|code_dir/gitInfo]> must set")
+			pdb.set_trace()
 		elif model_params['model_framework_type'] == "PRESET_MODEL":
 			if model_params.get('model_name') and model_params.get('model_framework_type')  and model_params.get('model_version') \
 							and model_params.get('model_framework') and model_params.get('model_path'):

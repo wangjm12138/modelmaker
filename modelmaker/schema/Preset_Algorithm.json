@@ -1,0 +1,80 @@
+{
+	"title": "Train Peset Algorithm",
+	"description": "This is for Train Peset Algorithm api parameter check",
+    "type": "object",
+    "properties": {
+		"name": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 64
+		},
+		"type": {
+				"type": "string",
+				"pattern": "PRESET_ALGORITHM"
+		},
+		"algorithmId": {
+				"type": "number"
+		},
+		"parameters": {
+				"anyOf" :[
+					{"type": "null"},
+					{"type": "array",
+						"items": {
+							"type": "object"
+						}
+					}
+				]
+		},
+		"modelUrl": {
+				"anyOf" :[
+					{"type": "null"},
+					{"type": "string"}
+				]
+		},
+		"dataUrl": {
+				"type": "string",
+				"pattern": "^s3://"
+		},
+		"output": {
+				"type": "string",
+				"pattern": "^s3://"
+		},
+		"resourceId": {
+				"type": "number"
+		},
+		"volumeSize": {
+				"type": "number",
+				"minimum": 1,
+				"maximum": 100,
+				"multipleof": 1
+		},
+		"instance": {
+				"type": "number",
+				"minimum": 1,
+				"maximum": 100,
+				"multipleof": 1
+		},
+		"maxRuntime": {
+				"anyOf" :[
+					{"type": "null"},
+					{"type": "number"}
+				]
+		},
+		"isFlowInput": {
+				"anyOf" :[
+					{"type": "null"},
+					{"type": "number"}
+				]
+		},
+		"description": {
+				"anyOf" :[
+					{"type": "null"},
+					{"type": "string",
+						"minLength": 1,
+						"maxLength": 128
+					}
+				]
+		}
+    },
+	"required": ["name","algorithmId","dataUrl","output","resourceId","volumeSize","instance"]
+}

@@ -1,0 +1,27 @@
+{
+	"title": "Train Peset Model",
+	"description": "This is for Train Peset Model api parameter check",
+    "type": "object",
+    "properties": {
+		"name": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 64
+		},
+		"type": {
+				"type": "string",
+				"pattern": "PRESET_MODEL"
+		},
+		"version": {
+				"type": "string"
+		},
+		"presetModelId": {
+				"type": "number"
+		},
+		"modelPath": {
+				"type": "string",
+				"pattern": "^s3://"
+		}
+    },
+	"required": ["name","type","version","presetModelId","modelPath"]
+}

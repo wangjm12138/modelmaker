@@ -21,12 +21,12 @@ preset_estimator = Estimator(
                       volume_size=1)                                                 # 训练附加卷
 
 preset_estimator.fit( "s3://aiteam/image-class/data/", wait = True, logs = True, job_name=job_name)
-preset_estimator.create_model(
-#                     model_name      = "preset1-model",                       # 模型名称
-                     model_version   = "1.1.1.2")                                       # 模型版本
-#                     model_framework      = 500000)                      # 模型框架
-#					 model_path      = "s3://aiteam/image-class/output/1.4/",      # 模型地址
-#                    model_framework_type  = "PRESET_MODEL")        # 模型框架类型
+#preset_estimator.create_model(
+##                     model_name      = "preset1-model",                       # 模型名称
+#                     model_version   = "1.1.1.2")                                       # 模型版本
+##                     model_framework      = 500000)                      # 模型框架
+##					 model_path      = "s3://aiteam/image-class/output/1.4/",      # 模型地址
+##                    model_framework_type  = "PRESET_MODEL")        # 模型框架类型
 
 #predictor_instance = preset_estimator.deploy_predictor(
 #						service_name  = "preset-service",

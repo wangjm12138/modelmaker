@@ -1,12 +1,14 @@
 from __future__ import print_function
 from .client.api import *
 from .model import *
+from .schema import Schema_json 
 from datetime import datetime, timedelta
-import time
 #====================
+import time
 import json
 import logging
 import pdb
+from jsonschema import validate
 #python 2 and python 3 compatibility library
 from six import with_metaclass
 from abc import ABCMeta, abstractmethod
@@ -52,8 +54,6 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		starttime = datetime.now()
 		job_name = self._prepare_for_training(job_name=job_name)
 
-#		if inputs is None:
-#			raise ValueError('Input data is needed for training')
 		data = _TrainingJob.start_new(self, inputs)
 		version_id = data['versionId']
 		self.job_id = data['id']
@@ -351,14 +351,10 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		status = result['status']
 		if status == 'FINISH':
 			if kwargs.get('model_path') == None:
-				if self.output_path == None:
-					raise ValueError('model_path is None!')
-				else:
+				if self.output_path != None:
 					kwargs['model_path'] = self.output_path
 			if kwargs.get('model_name') == None:
-				if self.job_name == None:
-					raise ValueError('model_name is None!')
-				else:
+				if self.job_name != None:
 					kwargs['model_name'] = self.job_name
 
 			if kwargs.get('model_framework_type') == None:
@@ -449,141 +445,77 @@ class _TrainingJob():
 					return result
 		else:
 			raise TypeError("code_dir must be string !!")
-
-	@classmethod
-	def s3_check_parameter(cls,path):
-		if path is None:
-			pass
-		elif isinstance(path,str):
-			if path.startswith("s3://") == True:
-				pass
-			else:
-				raise ValueError('%s must conform to "s3://XXX"'%path)
-		elif isinstance(path,list):
-			for item in path:
-				if item is None: 
-					pass
-				elif item.startswith("s3://") == True:
-					pass
-				else:
-					raise ValueError('%s must conform to "s3://XXX"'%item)
-		else:
-			raise ValueError('Type must str or list')
-
+	
 	@classmethod
 	def prepare_config(cls, estimator, inputs):
-		Framework = ["TensorFlow-1.13.1-python3.5","MXNET-python3.5","Caffe-python3.5"]
 		Framework_type = ["BASIC_FRAMEWORK","PRESET_ALGORITHM","CUSTOM"]
-		custom_resource = {'cpu','memory','gpuModel','gpuCount'}
 		_config = {}
+		## nomally parameter
 		_config['name'] = estimator.job_name
 		_config['type'] = estimator.framework_type
-		## environment check
-		if estimator.train_instance_count is None:
-			raise ValueError("train_instance_count must set!")
-		elif isinstance(estimator.train_instance_count,int) == False:
-			raise ValueError("train_instance_count must type of int!")
-		elif estimator.train_instance_count > 10:
-			raise ValueError("train_instance_count < 10!")
-		
-		if estimator.volume_size is None:
-			raise ValueError("volume_size must set!")
-		elif isinstance(estimator.volume_size,int) == False:
-			raise ValueError("volume_size must type of int!")
-		elif estimator.volume_size > 10:
-			raise ValueError("volume_size < 10!")
-		if estimator.train_instance_type is None:
-			raise ValueError("train_instance_type must set!")
-	
-		if estimator.resource_pool_type is None:
-			_config['resourcePoolType'] = "PUBLIC_POOL"
-		else:
-			_config['resourcePoolType'] = estimator.resource_pool_type
-
-		if _config['resourcePoolType'] == "PUBLIC_POOL":
-			_config['customResource'] = None
-		else:
-			if isinstance(estimator.custom_resource,dict) and set(estimator.custom_resource.keys()) == custom_resource:
-				_config['customResource'] = estimator.custom_resource
-			else:
-				raise ValueError("Format like : customResource={'cpu':1,'memory':1,'gpuModel':'model','gpuCount':1}")
-
 		_config['resourceId'] = estimator.train_instance_type
 		_config['volumeSize'] = estimator.volume_size
 		_config['instance'] = estimator.train_instance_count
 		_config['maxRuntime'] = estimator.max_runtime
 		_config['description'] = estimator.description
-		## framwork check
+		## machine check
+		result = _TrainingJob.get_instance_types(estimator.modelmaker_session,'TRAIN')
+		resourceId_list = [ item['id'] for item in result['resources']]
+		if _config['resourceId'] not in resourceId_list:
+			raise ValueError("train_instance_type is not exist, please check it!")
+		## framwork parameter
 		if estimator.framework_type == None or estimator.framework_type not in Framework_type:
 			 raise ValueError('framework_type is must setted in "BASIC_FRAMEWORK","PRESET_ALGORITHM","CUSTOM" ')
 		else:
 			if estimator.framework_type == "BASIC_FRAMEWORK":
-				## framwork parameter check
-				if estimator.boot_file and estimator.framework and estimator.output_path and inputs and (estimator.code_dir or estimator.gitInfo):
-					_config['codeUrl'] = estimator.code_dir
-					_config['codeVersion'] = estimator.code_version
-					_config['gitInfo'] = estimator.git_info
-					_config['frameworkId'] = estimator.framework
-					_config['startup'] = estimator.boot_file
-					_config['startupType'] = estimator.boot_type
-					_config['parameters'] = estimator.hyperparameters
-					_config['inputFiles'] = estimator.input_files
-					_config['dataUrl'] = inputs
-					_config['output'] = estimator.output_path
-					_config['monitors'] = estimator.monitors
-					_TrainingJob.s3_check_parameter([_config['dataUrl'],_config['output']])
-					#if _config['startupType'] not in ['NORMAL','HOROVOD']:
-					#	raise ValueError("startupType must set  NORMAL or HOROVOD")
-					if _config['frameworkId'] is None:
-						raise ValueError("when framework_type=BASIC_FRAMEWORK , framework must set")
-					else:
-						result = _TrainingJob.get_framework_list(estimator.modelmaker_session,'TRAIN')
-						frameworkId_list = [ item['id'] for item in result['frameWorks']]
-						if _config['frameworkId'] not in frameworkId_list:
-							raise ValueError("framework is not exist, please check it!")
-						_config['codeUrl'] = _TrainingJob.s3_user_code_upload(estimator.modelmaker_session,_config['codeUrl'])
-				else:
-			 		raise ValueError('When framework_type is "BASIC_FRAMEWORK",<boot_file|framework|output_path|inputs|[code_dir/git_info]> is need')
+				_config['codeUrl'] = estimator.code_dir
+				_config['codeVersion'] = estimator.code_version
+				_config['gitInfo'] = estimator.git_info
+				_config['frameworkId'] = estimator.framework
+				_config['startup'] = estimator.boot_file
+				_config['startupType'] = estimator.boot_type
+				_config['parameters'] = estimator.hyperparameters
+				_config['inputFiles'] = estimator.input_files
+				_config['dataUrl'] = inputs
+				_config['output'] = estimator.output_path
+				_config['monitors'] = estimator.monitors
+				## framwork parameter check by schema Basic_Framework.json
+				validate(instance=_config,schema=Schema_json.Basic_Framework)
+				## framwork check
+				result = _TrainingJob.get_framework_list(estimator.modelmaker_session,'TRAIN')
+				frameworkId_list = [ item['id'] for item in result['frameWorks']]
+				if _config['frameworkId'] not in frameworkId_list:
+					raise ValueError("framework is not exist, please check it!")
+				## upload user code
+				_config['codeUrl'] = _TrainingJob.s3_user_code_upload(estimator.modelmaker_session,_config['codeUrl'])
 			elif estimator.framework_type == "PRESET_ALGORITHM":
-				## framwork parameter check
-				if estimator.algorithm and estimator.output_path and inputs:
-					_config['algorithmId'] = estimator.algorithm
-					_config['parameters'] = estimator.hyperparameters
-					_config['modeUrl'] = estimator.init_model
-					_config['dataUrl'] = inputs
-					_config['output'] = estimator.output_path
-					_TrainingJob.s3_check_parameter([_config['dataUrl'],_config['output']])
-					if _config['algorithmId'] is None:
-						raise ValueError("when framework_type=PRESET_ALGORITHM , algorithm must set")
-					else:
-						result = _TrainingJob.get_preset_algorithm(estimator.modelmaker_session)
-						algorithmId_list = [ item['id'] for item in result['presetAlgorithms']]
-						if _config['algorithmId'] not in algorithmId_list:
-							raise ValueError("algorithmId is not exist, please check it!")
-				else:
-			 		raise ValueError('When framework_type is "PRESET_ALGORITHM",<algorithm|inputs|output_path> is need')
+				_config['algorithmId'] = estimator.algorithm
+				_config['parameters'] = estimator.hyperparameters
+				_config['modeUrl'] = estimator.init_model
+				_config['dataUrl'] = inputs
+				_config['output'] = estimator.output_path
+				## framwork parameter check by schema Preset_Algorithm.json
+				validate(instance=_config,schema=Schema_json.Preset_Algorithm)
+				## framwork check
+				result = _TrainingJob.get_preset_algorithm(estimator.modelmaker_session)
+				algorithmId_list = [ item['id'] for item in result['presetAlgorithms']]
+				if _config['algorithmId'] not in algorithmId_list:
+					raise ValueError("algorithmId is not exist, please check it!")
 			elif estimator.framework_type == "CUSTOM":
-				## framwork parameter check
-				if estimator.user_image_url and estimator.output_path:
-					_config['gitInfo'] = estimator.git_info
-					_config['mirrorUrl'] = estimator.user_image_url
-					_config['codeUrl'] = estimator.code_dir
-					_config['envs'] = estimator.env
-					_config['command'] = estimator.user_command
-					_config['args'] = estimator.user_command_args
-					_config['dataUrl'] = inputs
-					_config['output'] = estimator.output_path
-					_config['monitors'] = estimator.monitors
-					#pdb.set_trace()
-					_TrainingJob.s3_check_parameter([_config['dataUrl'],_config['output']])
-					_config['codeUrl'] = _TrainingJob.s3_user_code_upload(estimator.modelmaker_session,_config['codeUrl'])
-				else:
-			 		raise ValueError('When framework_type is "CUSTOM",<user_image_url|inputs|output_path> is need')
-
-			result = _TrainingJob.get_instance_types(estimator.modelmaker_session,'TRAIN')
-			resourceId_list = [ item['id'] for item in result['resources']]
-			if _config['resourceId'] not in resourceId_list:
-				raise ValueError("train_instance_type is not exist, please check it!")
+				#if estimator.user_image_url and estimator.output_path:
+				_config['gitInfo'] = estimator.git_info
+				_config['mirrorUrl'] = estimator.user_image_url
+				_config['codeUrl'] = estimator.code_dir
+				_config['envs'] = estimator.env
+				_config['command'] = estimator.user_command
+				_config['args'] = estimator.user_command_args
+				_config['dataUrl'] = inputs
+				_config['output'] = estimator.output_path
+				_config['monitors'] = estimator.monitors
+				## framwork parameter check by schema Custom.json
+				validate(instance=_config,schema=Schema_json.Custom)
+				## upload user code
+				_config['codeUrl'] = _TrainingJob.s3_user_code_upload(estimator.modelmaker_session,_config['codeUrl'])
 
 		return _config
 
@@ -600,7 +532,7 @@ class _TrainingJob():
 		_config = _TrainingJob.prepare_config(estimator, inputs)
 
 		body = _config
-		#pdb.set_trace()
+		pdb.set_trace()
 		LOGGER.debug("=============Train:%s==================="%(_config['type']))
 		LOGGER.debug(body)
 		if estimator.modelmaker_session.auth == 'token':

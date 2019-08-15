@@ -27,12 +27,12 @@ custom_estimator = Estimator(
                       volume_size=1)                                                 # 训练附加卷
 
 custom_estimator.fit(inputs=None, wait = True, logs = True, job_name=job_name)
-custom_estimator.create_model(
-                     model_name      = "wjm-custom-model",                    # 模型名称
-                     model_version   = "1.1.3",                       # 模型版本
-					 model_path      = "s3://aiteam/image-class/",                # 模型地址
-                     model_framework_type  = "CUSTOM",        # 模型框架类型
-                     model_mirrorUrl   = "172.16.14.172/test/cuda:9.0-devel-ubuntu16.04")           # 模型版本
+#custom_estimator.create_model(
+#                     model_name      = "wjm-custom-model",                    # 模型名称
+#                     model_version   = "1.1.3",                       # 模型版本
+#					 model_path      = "s3://aiteam/image-class/",                # 模型地址
+#                     model_framework_type  = "CUSTOM",        # 模型框架类型
+#                     model_mirrorUrl   = "172.16.14.172/test/cuda:9.0-devel-ubuntu16.04")           # 模型版本
 
 #predictor_instance = custom_estimator.deploy_predictor(
 #						service_name  = "wjm-custom-predictor1",

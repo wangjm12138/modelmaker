@@ -1,0 +1,141 @@
+{
+	"title": "Train CUSTOM Framework",
+	"description": "This is for Train CUSTOM Framework api parameter check",
+    "type": "object",
+    "properties": {
+		"name": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 64
+		},
+		"type": {
+				"type": "string",
+				"pattern": "CUSTOM"
+		},
+		"mirrorUrl": {
+				"type": "string"
+		},
+		"codeUrl": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "string"}
+				]
+		},
+		"codeVersion": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "string"}
+				]
+		},
+		"gitInfo": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "object",
+						"properties": {
+								"username": {
+										"type": "string"
+								},
+								"password": {
+										"type": "string"
+								},
+								"branch": {
+										"type": "string"
+								}
+						}
+					}
+				]
+		},
+		"envs": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "array",
+						"item": {
+							"type": "object"
+						}
+					}
+				]
+		},
+		"command": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "string"}
+				]
+		},
+		"args": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "string"}
+				]
+		},
+		"inputFiles": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "array",
+						"item": {
+							"type": "object"
+						}
+					}
+				]
+		},
+		"dataUrl": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "string","pattern": "^s3://"},
+					{"type": "array",
+						"item": {
+							"type": "string",
+							"pattern": "^s3://"
+						}
+					}
+				]
+		},
+		"output": {
+				"type": "string",
+				"pattern": "^s3://"
+		},
+		"monitors": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "array",
+						"item": {
+							"type": "object"
+						}
+					}
+				]
+		},
+		"resourceId": {
+				"type": "number"
+		},
+		"volumeSize": {
+				"type": "number",
+				"minimum": 1,
+				"maximum": 100,
+				"multipleof": 1
+		},
+		"instance": {
+				"type": "number",
+				"minimum": 1,
+				"maximum": 100,
+				"multipleof": 1
+		},
+		"maxRuntime": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "number"}
+				]
+		},
+		"isFlowInput": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "number"}
+				]
+		},
+		"description": {
+				"anyOf": [
+					{"type": "null"},
+					{"type": "string","minLength": 1,"maxLength": 128}
+				]
+		}
+    },
+	"required": ["name","mirrorUrl","output","resourceId","volumeSize","instance"]
+}
