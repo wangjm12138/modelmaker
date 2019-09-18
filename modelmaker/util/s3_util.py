@@ -5,10 +5,23 @@ from boto3.session import Session
 import logging
 import os
 import shutil
+import hashlib
 
 logging.basicConfig()
 LOGGER = logging.getLogger('s3')
 LOGGER.setLevel(logging.DEBUG)
+
+class ProgressPercentage(object):
+    def __init__(self,file_size,filename):
+        self._filename = filename
+        self._file_size = int(file_size)
+        self._seen_so_far = 0
+    def __call__(self, bytes_amount):
+        # To simplify, assume this is hooked up to a single filename
+        self._seen_so_far += bytes_amount
+        percentage = (self._seen_so_far / self._file_size) * 100
+        sys.stdout.write("\r%s  %s / %s  (%.2f%%)" % (self._filename, self._seen_so_far, self._file_size,percentage))
+        sys.stdout.flush()
 
 class WCS():
 	"""
@@ -41,6 +54,26 @@ class WCS():
 
 		return bucket, key
 
+	def upload_object( self, bucket, key, bucket_path, local_file_path):
+		"""put local file to s3
+			if the bucket_name does not exist in S3, then it will throw 404 exception
+			if the bucket path does not exist in the bucket Name, then it will be created
+			if S3 has existed the file in the specified path, then it will be overwritten
+		"""
+		try:
+			if not os.path.exists(local_file_path):
+				raise Exception("File " + local_file_path + " does not exist!")
+			file_name = os.path.split(local_file_path)[-1]
+
+			cloud_path = os.path.join(key,file_name)
+			resp = self.client.upload_file(Bucket=bucket, Key=cloud_path, Filename=local_file_path, Callback=ProgressPercentage(os.path.getsize(local_file_path),cloud_path))
+			print("")
+			LOGGER.info("Successfully upload file %s to S3 %s" % (local_file_path, bucket_path))
+#		except S3UploadException:
+#			raise S3Exception(code=resp.errorCode, message=resp.errorMessage)
+		except Exception as e:
+			raise Exception("Upload file to S3 failed! ", e)
+
 	def put_object( self, bucket, key, bucket_path, local_file_path):
 		"""put local file to s3
 			if the bucket_name does not exist in S3, then it will throw 404 exception
@@ -61,13 +94,13 @@ class WCS():
 		except Exception as e:
 			raise Exception("Upload file to S3 failed! ", e)
 
-	def put_directory(self, bucket, key, bucket_path, local_directory):
+	def upload_directory(self, bucket, key, bucket_path, local_directory):
 		"""put multi local files to S3
 			if the bucket_name does not exist in S3, then it will throw 404 exception
 			if the bucket path does not exist in the bucket Name, then it will be created
 			if S3 has existed the file in the specified path, then it will be overwritten
 		"""
-		print(bucket,key,bucket_path)
+		#print(bucket,key,bucket_path)
 		if not os.path.exists(local_directory):
 			raise Exception("Directory " + local_directory + " does not exist!")
 		dir_name = os.path.split(local_directory)[-1] #获取顶级目录名
@@ -81,8 +114,8 @@ class WCS():
 				dir_list.append(create_dir_name)
 				for file_name in files:
 						file_list.append((create_dir_name,os.path.join(path, file_name)))
-		print(dir_list)
-		print(file_list)
+		#print(dir_list)
+		#print(file_list)
 		for item in dir_list:
 			try:
 				self.create_directory(bucket, key, item)
@@ -91,7 +124,7 @@ class WCS():
 		for key_sub, directory in file_list:
 			try:
 				cloud_path = os.path.join(key, key_sub)
-				self.put_object(bucket, cloud_path, os.path.join(bucket_path,key_sub), directory)
+				self.upload_object(bucket, cloud_path, os.path.join(bucket_path,key_sub), directory)
 			except Exception as e:
 				raise Exception("Upload file to S3 failed! ", e)
 
@@ -106,9 +139,9 @@ class WCS():
 				if not os.path.exists(local_file_path):
 					raise Exception("File " + local_file_path + " does not exist!")
 				if os.path.isdir(local_file_path):
-					self.put_directory(bucket, key, bucket_path, local_file_path)
+					self.upload_directory(bucket, key, bucket_path, local_file_path)
 				else:
-					self.put_object(bucket, key, bucket_path, local_file_path)
+					self.upload_object(bucket, key, bucket_path, local_file_path)
 			except Exception as e:
 				raise Exception("Upload multi files to S3 failed! ", e)
 
@@ -122,10 +155,20 @@ class WCS():
 			object_name = bucket_path_split[1]
 			file_name = object_name.split('/')[-1]
 			local_file_path = os.path.join(local_file_path, file_name)
-			resp = self.client.download_file(Bucket=bucket_name, Key=object_name, Filename=local_file_path)
+			get_object = self.s3.Object(bucket_name,object_name)
+			resp = self.client.download_file(Bucket=bucket_name, Key=object_name, Filename=local_file_path,Callback=ProgressPercentage(get_object.content_length,local_file_path))
+			print("")
 			LOGGER.info('download_file:'+ os.path.join(bucket_name, object_name) + ' to ' + local_file_path)
 		except Exception as e:
 			raise Exception("Download file from S3 failed! ", e)
+
+	def calculate_local_md5(self,file_path):
+		with open(file_path, 'rb') as f:
+			d = f.read()
+		h = hashlib.md5()
+		h.update(d)
+		result = h.hexdigest()
+		return result
 
 	def mkdir_file(self,file_path):
 
@@ -146,14 +189,25 @@ class WCS():
 			resp = self.client.list_objects(Bucket=bucket, Prefix=key)
 			if resp.get('Contents'):
 				for obj in resp['Contents']:
-					#print(obj['Key'],key)
-					#print(obj['Key'].split(key))
-					#print(obj['Key'],key)
 					combine_path = os.path.join(dir_name, obj['Key'].split(key)[1])
 					local_file_path = os.path.join(local_storage_path, combine_path)
-					self.mkdir_file(local_file_path)
-					resp = self.client.download_file(Bucket=bucket, Key=obj['Key'], Filename=local_file_path)
-					LOGGER.info('download_dir:'+ os.path.join(bucket, obj['Key']) + ' to ' + local_file_path)
+					if os.path.exists(local_file_path):
+						local_md5 = self.calculate_local_md5(local_file_path)
+						remote_object = self.s3.Object(bucket,obj['Key'])
+						remote_etag = eval(remote_object.e_tag)
+						#print(type(local_md5),local_md5,len(local_md5),type(remote_etag),remote_etag,len(remote_etag))
+						if local_md5 == remote_etag:
+							LOGGER.info("The %s is not modified, md5sum = %s, so don't neet to download %s"%(local_file_path,local_md5,obj['Key']))
+						else:
+							self.mkdir_file(local_file_path)
+							resp = self.client.download_file(Bucket=bucket, Key=obj['Key'], Filename=local_file_path, Callback=ProgressPercentage(obj['Size'],local_file_path))
+							print("")
+							LOGGER.info('download_dir:'+ os.path.join(bucket, obj['Key']) + ' to ' + local_file_path)
+					else:
+						self.mkdir_file(local_file_path)
+						resp = self.client.download_file(Bucket=bucket, Key=obj['Key'], Filename=local_file_path, Callback=ProgressPercentage(obj['Size'],local_file_path))
+						print("")
+						LOGGER.info('download_dir:'+ os.path.join(bucket, obj['Key']) + ' to ' + local_file_path)
 			else:
 				LOGGER.error('download_dir:'+ bucket_path+ " is NULL!")
 		except Exception as e:

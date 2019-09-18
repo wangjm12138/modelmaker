@@ -134,7 +134,7 @@ class Session(object):
 				else:
 					LOGGER.warning("s3_protocol set default:%s"%self.s3_protocol)
 					
-		if LOGGER_LEVEL == 10:
+		if int(LOGGER_LEVEL) == 10:
 			LOGGER.debug({'username':self.username, 'password':self.password, 'iam_server':self.iam_server, 'bucket':self.bucket})
 		else:
 			LOGGER.info({'username':self.username, 'password':self.password.replace(self.password,'*'*len(self.password)), 'iam_server':self.iam_server, 'bucket':self.bucket})
@@ -155,7 +155,7 @@ class Session(object):
 				except Exception as e:
 						raise Exception("Get ak/sk failed! ", e)
 				self.access_key, self.secret_key, self.s3_endpoint_url, self.s3_region, self.s3_mirror_auth, self.s3_mirror_endpoint_url = res
-				if LOGGER_LEVEL == 10:
+				if int(LOGGER_LEVEL) == 10:
 					LOGGER.debug({'response':{'url':self.s3_endpoint_url,'ak':self.access_key,'sk':self.secret_key,'region':self.s3_region}})
 				else:
 					LOGGER.info({'response':{'url':self.s3_endpoint_url,'ak':self.access_key,'sk':self.secret_key.replace(self.secret_key,'*'*len(self.secret_key)),'region':self.s3_region}})
@@ -186,7 +186,8 @@ class Session(object):
 			if os.path.isdir(path):
 				self.s3_client.put_directory(bucket=bucket, key=key, bucket_path=bucket_path, local_directory=path)
 			elif os.path.isfile(path):
-				self.s3_client.put_object(bucket=bucket, key=key, bucket_path=bucket_path, local_file_path=path)
+				#self.s3_client.put_object(bucket=bucket, key=key, bucket_path=bucket_path, local_file_path=path)
+				self.s3_client.upload_object(bucket=bucket, key=key, bucket_path=bucket_path, local_file_path=path)
 		else:
 			raise Exception('local path should be list or string')
 
@@ -201,6 +202,7 @@ class Session(object):
 		if is_directory:
 			#bucket_path = ai-team/edfg/, path='./download'
 			bucket, key = self.s3_client.check_bucket_path(bucket_path)
+			#print(bucket,bucket_path)
 			self.s3_client.download_directory(bucket=bucket, key=key, bucket_path=bucket_path, local_storage_path=path)
 		else:
 			#bucket_path = ai-team/edfg/a.txt, path='./download'

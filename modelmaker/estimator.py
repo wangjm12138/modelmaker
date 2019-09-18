@@ -472,9 +472,11 @@ class _TrainingJob():
 
 	@classmethod
 	def prepare_config(cls, estimator, inputs):
+		check_train_machine=True
 		Framework = ["TensorFlow-1.13.1-python3.5","MXNET-python3.5","Caffe-python3.5"]
 		Framework_type = ["BASIC_FRAMEWORK","PRESET_ALGORITHM","CUSTOM"]
-		custom_resource = {'cpu','memory','gpuModel','gpuCount'}
+		nomally_custom_resource = {'cpu','memory','gpuModel','gpuCount'}
+		request_custom_resource = {'cpu','memory','gpuModel','gpuCount','requestCpu','requestMemory','shareGpu','gpuz'}
 		_config = {}
 		_config['name'] = estimator.job_name
 		_config['type'] = estimator.framework_type
@@ -492,8 +494,6 @@ class _TrainingJob():
 			raise ValueError("volume_size must type of int!")
 		elif estimator.volume_size > 10:
 			raise ValueError("volume_size < 10!")
-		if estimator.train_instance_type is None:
-			raise ValueError("train_instance_type must set!")
 	
 		if estimator.resource_pool_type is None:
 			_config['resourcePoolType'] = "PUBLIC_POOL"
@@ -501,12 +501,25 @@ class _TrainingJob():
 			_config['resourcePoolType'] = estimator.resource_pool_type
 
 		if _config['resourcePoolType'] == "PUBLIC_POOL":
+			if estimator.train_instance_type is None:
+				raise ValueError("train_instance_type must set when resource_pool_type=PUBLIC_POOL!")
 			_config['customResource'] = None
 		else:
-			if isinstance(estimator.custom_resource,dict) and set(estimator.custom_resource.keys()) == custom_resource:
-				_config['customResource'] = estimator.custom_resource
+			if estimator.train_instance_type is None:
+				check_train_machine=False
+				real_custom_resource = set(estimator.custom_resource.keys())
+				if isinstance(estimator.custom_resource,dict) and real_custom_resource.issubset(request_custom_resource) and nomally_custom_resource.issubset(real_custom_resource):
+					_config['customResource'] = estimator.custom_resource
+					if estimator.tagName != None:
+						_config['tagName'] = estimator.tagName
+				else:
+					raise ValueError("Nomally format like : custom_resource={'cpu':2,'memory':2.5,'gpuModel':'K80','gpuCount':2} \
+									or Request format like : custom_resource={'cpu':2,'memory':2,'gpuModel':'K80','gpuCount':2, \
+									'requestCpu':1, 'requestMemory':1,'shareGpu':0,'gpuz':1.5}, Request format is minimum source to use")
 			else:
-				raise ValueError("Format like : customResource={'cpu':1,'memory':1,'gpuModel':'model','gpuCount':1}")
+				_config['customResource'] = estimator.custom_resource
+				if estimator.tagName != None:
+					_config['tagName'] = estimator.tagName
 
 		_config['resourceId'] = estimator.train_instance_type
 		_config['volumeSize'] = estimator.volume_size
@@ -532,8 +545,8 @@ class _TrainingJob():
 					_config['output'] = estimator.output_path
 					_config['monitors'] = estimator.monitors
 					_TrainingJob.s3_check_parameter([_config['dataUrl'],_config['output']])
-					#if _config['startupType'] not in ['NORMAL','HOROVOD']:
-					#	raise ValueError("startupType must set  NORMAL or HOROVOD")
+					if _config['startupType'] not in ['NORMAL','HOROVOD']:
+						raise ValueError("startupType must set  NORMAL or HOROVOD")
 					if _config['frameworkId'] is None:
 						raise ValueError("when framework_type=BASIC_FRAMEWORK , framework must set")
 					else:
@@ -565,6 +578,7 @@ class _TrainingJob():
 			elif estimator.framework_type == "CUSTOM":
 				## framwork parameter check
 				if estimator.user_image_url and estimator.output_path:
+					_config['codeVersion'] = estimator.code_version
 					_config['gitInfo'] = estimator.git_info
 					_config['mirrorUrl'] = estimator.user_image_url
 					_config['codeUrl'] = estimator.code_dir
@@ -579,11 +593,11 @@ class _TrainingJob():
 					_config['codeUrl'] = _TrainingJob.s3_user_code_upload(estimator.modelmaker_session,_config['codeUrl'])
 				else:
 			 		raise ValueError('When framework_type is "CUSTOM",<user_image_url|inputs|output_path> is need')
-
-			result = _TrainingJob.get_instance_types(estimator.modelmaker_session,'TRAIN')
-			resourceId_list = [ item['id'] for item in result['resources']]
-			if _config['resourceId'] not in resourceId_list:
-				raise ValueError("train_instance_type is not exist, please check it!")
+			if check_train_machine:
+				result = _TrainingJob.get_instance_types(estimator.modelmaker_session,'TRAIN')
+				resourceId_list = [ item['id'] for item in result['resources']]
+				if _config['resourceId'] not in resourceId_list:
+					raise ValueError("train_instance_type is not exist, please check it!")
 
 		return _config
 
@@ -835,7 +849,7 @@ class Estimator(EstimatorBase):
 
 	def __init__(self, code_dir=None, code_version=None, boot_file=None, boot_type=None, hyperparameters=None, framework = None, framework_type=None, algorithm=None, 
 				 input_files=None, model_name=None, init_model=None, env=None, user_image_url=None, user_command=None, user_command_args=None,
-				 monitors=None, job_description=None, git_info=None, description=None, **kwargs):
+				 monitors=None, job_description=None, git_info=None, description=None, tagName=None, **kwargs):
 
 		self.code_dir = code_dir
 		self.code_version = code_version
@@ -856,6 +870,7 @@ class Estimator(EstimatorBase):
 		self.git_info = git_info
 		self.job_description = job_description
 		self.description = description
+		self.tagName = tagName
 
 		super(Estimator, self).__init__(**kwargs)
 
