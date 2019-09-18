@@ -145,6 +145,14 @@ class WCS():
 			except Exception as e:
 				raise Exception("Upload multi files to S3 failed! ", e)
 
+	def calculate_local_md5(self,file_path):
+		with open(file_path, 'rb') as f:
+			d = f.read()
+		h = hashlib.md5()
+		h.update(d)
+		result = h.hexdigest()
+		return result
+
 	def download_object(self, bucket_path, local_file_path):
 		"""download S3 file to your local file
 			if local path has existed the file, then it will be overwritten
@@ -155,20 +163,22 @@ class WCS():
 			object_name = bucket_path_split[1]
 			file_name = object_name.split('/')[-1]
 			local_file_path = os.path.join(local_file_path, file_name)
-			get_object = self.s3.Object(bucket_name,object_name)
-			resp = self.client.download_file(Bucket=bucket_name, Key=object_name, Filename=local_file_path,Callback=ProgressPercentage(get_object.content_length,local_file_path))
-			print("")
-			LOGGER.info('download_file:'+ os.path.join(bucket_name, object_name) + ' to ' + local_file_path)
+			remote_object = self.s3.Object(bucket_name,object_name)
+			remote_etag = eval(remote_object.e_tag)
+			if os.path.exists(local_file_path):
+				local_md5 = self.calculate_local_md5(local_file_path)
+				if local_md5 == remote_etag:
+					LOGGER.info("The %s is not modified, md5sum = %s, so don't neet to download %s"%(local_file_path,local_md5,object_name))
+				else:
+					resp = self.client.download_file(Bucket=bucket_name, Key=object_name, Filename=local_file_path,Callback=ProgressPercentage(remote_object.content_length,local_file_path))
+					print("")
+					LOGGER.info('download_file:'+ os.path.join(bucket_name, object_name) + ' to ' + local_file_path)
+			else:
+				resp = self.client.download_file(Bucket=bucket_name, Key=object_name, Filename=local_file_path,Callback=ProgressPercentage(remote_object.content_length,local_file_path))
+				print("")
+				LOGGER.info('download_file:'+ os.path.join(bucket_name, object_name) + ' to ' + local_file_path)
 		except Exception as e:
 			raise Exception("Download file from S3 failed! ", e)
-
-	def calculate_local_md5(self,file_path):
-		with open(file_path, 'rb') as f:
-			d = f.read()
-		h = hashlib.md5()
-		h.update(d)
-		result = h.hexdigest()
-		return result
 
 	def mkdir_file(self,file_path):
 
