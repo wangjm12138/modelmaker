@@ -19,48 +19,20 @@ LOGGER_LEVEL = os.getenv("MODELMAKER_LEVEL", logging.INFO) #cloud
 LOGGER.setLevel(int(LOGGER_LEVEL))
 
 ISOTIMEFORMAT = '%m%d-%H%M%S'
-CREATE_MODEL_PARAMS = set(['model_name', 'model_version', 'model_path',
-						   'model_framework', 'model_framework_type', 'model_code_dir',
-						   'model_boot_file', 'model_call_specs', 'model_description','model_mirrorUrl','model_id','model_git_info'])
-DEPLOY_SERVICE_PARAMS = set(['service_name', 'service_type', 'service_models'])
-DEPLOY_SERVICE_MODELS_PARAMS = set(['modelVersionId', 'weight', 'resourceId', 'instanceCount','envs'])
 
 MODEL_WAIT_SECOND = 5
 MAXIMUM_RETRY_TIMES = 200000
 
 
-class Model(object):
-	"""
-	A ModelMaker Model that can be created model, deployed model service,
-	got model info and list, and deleted model and service endpoint.
-	"""
-	#def __init__(self, session):
-	def __init__(self, model_name=None, model_version=None, model_path=None, model_framework=None, model_framework_type=None,
-				 model_code_dir=None, model_boot_file=None, model_call_specs=None, model_description=None, model_mirrorUrl=None,
-				 model_git_info=None,**kwargs):
-		"""
-		Initialize a model, determine the model authorize type.
-		param session: Building interactions with Wangsu Cloud service.
-		"""
-		self.model_name = model_name
-		self.model_version = model_version
-		self.model_path = model_path
-		self.model_framework = model_framework
-		self.model_framework_type = model_framework_type
-		self.model_code_dir = model_code_dir
-		self.model_boot_file = model_boot_file
-		self.model_call_specs = model_call_specs
-		self.model_description = model_description
-		self.model_mirrorUrl = model_mirrorUrl
-		self.model_git_info = model_git_info
+class ModelBase(with_metaclass(ABCMeta, object)):
 
-		#self.session = session
+	def __init__(self,**kwargs):
+		#self.model_instance = ModelApiAccountImpl(self.session)
 		self.service_id = None
 		self.model_id	= None
 		self.model_version_id = None
-		self.model_instance = ModelApiAccountImpl(self.session)
+		self.predictor_instance = None
 
-	#def create_model(self, **kwargs):
 	def create_model(self):
 		""" creating model interface
 		Args:
@@ -68,18 +40,13 @@ class Model(object):
 		Returns:
 			dict: model_id that creating successfully
 		"""
-		self.model_instance.check_params(1,**kwargs)
-		model_create_resp = self.model_instance.create_modelmaker_model(kwargs['model_name'])
-		self.model_id = self.model_instance.model_id
-		self.model_version_id = self.model_instance.model_version_id
-		return json.loads(model_create_resp.data.decode('utf-8'))
+		if self.modelmaker_session == None:
+			raise ValueError("When create model,the parameter modelmaker_session=XXX is need.")
+		data = _Manage_model.create_modelmaker_model(self,self.model_name)
+		self.model_id = data['id']
+		self.model_version_id = data['versionId']
 
-#	def update_model(self, model_version_id = None, **kwargs):
-#		result  = self.model_instance.update_model_version(model_version_id = model_version_id)
-#		result = json.loads(result.data.decode('utf-8'))
-#		LOGGER.info(result)
-#		return result
-
+		return data
 
 	def deploy_predictor(self, **kwargs):
 		""" Deploying model predictor interface
@@ -88,82 +55,39 @@ class Model(object):
 			Returns:
 				dict: service_id that creating successfully
 		"""
-		self.model_instance.check_params(2,**kwargs)
-		model_deploy_resp = self.model_instance.deploy_modelmaker_predictor()
-		self.service_id   = self.model_instance.service_id
-		return model_deploy_resp
+		if 'modelmaker_session' not in kwargs.keys():
+			kwargs['modelmaker_session']=self.modelmaker_session
+		if isinstance(kwargs['predictor_models'],list) and isinstance(kwargs['predictor_models'][0],dict):
+			if "modelVersionId" not in kwargs['predictor_models'][0] and self.model_version_id != None:
+				kwargs['predictor_models'][0]['modelVersionId'] = self.model_version_id
+			else:
+				raise ValueError("predictor_models parameter must have modelVersionId or please create model first")
+		self.predictor_instance = Predictor(**kwargs)
+		self.service_id = self.predictor_instance.deploy_predictor()
+		return self.predictor_instance
 
-	def model_info(self, model_id=None):
+	def info(self):
 		"""
 		return model information list of the input model_id or the last created model
 		"""
-		result  = self.model_instance.get_model_info(model_id=model_id)
+		if self.model_version_id is None:
+			raise ValueError("please create model first")
+		else:
+			model_version_id = self.model_version_id
+		result  = _Manage_model.get_model_version_info_instance(self.modelmaker_session,model_version_id)
 		result  = json.loads(result.data.decode('utf-8'))
 		LOGGER.info(result)
 		return result
 
-	def get_model_version_info(self, model_version_id=None):
-		"""
-		return model information list of the input model_id or the last created model
-		"""
-		result  = self.model_instance.get_model_version_info(model_version_id=model_version_id)
-		result  = json.loads(result.data.decode('utf-8'))
-		LOGGER.info(result)
-		return result
-
-	def preset_model(self):
-
-		result = self.model_instance.get_preset_model()
-		result  = json.loads(result.data.decode('utf-8'))
-		LOGGER.info(result)
-		return result
-
-	def predict_machine(self):
-
-		result = self.model_instance.get_predict_instance_types()
-		result  = json.loads(result.data.decode('utf-8'))
-		LOGGER.info(result)
-		return result
-
-	def predict_framework(self):
-
-		result = self.model_instance.get_predict_framework_list()
+	def delete_model(self):
+		if self.model_version_id is None:
+			raise ValueError("please create model first")
+		else:
+			model_version_id = self.model_version_id
+		result  = _Manage_model.delete_model_version_instance(self.modelmaker_session,model_version_id = model_version_id)
 		result = json.loads(result.data.decode('utf-8'))
 		LOGGER.info(result)
 		return result
-
-	def destory_model(self, model_id = None):
-
-		result = self.model_instance.delete_model(model_id = model_id)
-		result = json.loads(result.data.decode('utf-8'))
-		LOGGER.info(result)
-		return result
-
-	def destory_model_version(self, model_version_id = None):
-		
-		result  = self.model_instance.delete_model_version(model_version_id = model_version_id)
-		result = json.loads(result.data.decode('utf-8'))
-		LOGGER.info(result)
-		return result
-
-	def delete_model(self, model_version_id = None):
-		
-		result  = self.model_instance.delete_model_version(model_version_id = model_version_id)
-		result = json.loads(result.data.decode('utf-8'))
-		LOGGER.info(result)
-		return result
-
-	def delete_service(self, service_id=None):
-
-		result = self.model_instance.delete_service(service_id = service_id)
-		result = json.loads(result.data.decode('utf-8'))
-		LOGGER.info(result)
-		return result
-
-	def get_service_id(self):
-
-		LOGGER.info(self.service_id)
-		return self.service_id
 
 	def get_model_version_id(self):
 
@@ -175,14 +99,75 @@ class Model(object):
 		LOGGER.info(self.model_id)
 		return self.model_id
 
-class ModelApiBase(with_metaclass(ABCMeta, object)):
+	def get_service_id(self):
+
+		LOGGER.info(self.service_id)
+		return self.service_id
+
+
+	@classmethod
+	def model_list(cls, session=None, model_id=None):
+		"""
+		return model information list of the input model_id or the last created model
+		"""
+		result  = _Manage_model.get_model_info(modelmaker_session=session,model_id=model_id)
+		result  = json.loads(result.data.decode('utf-8'))
+		LOGGER.info(result)
+		return result
+
+	@classmethod
+	def model_version_info(cls, session=None, model_version_id=None):
+		"""
+		return model information list of the input model_id or the last created model
+		"""
+		result  = _Manage_model.get_model_version_info_global(modelmaker_session=session,model_version_id=model_version_id)
+		result  = json.loads(result.data.decode('utf-8'))
+		LOGGER.info(result)
+		return result
+
+	@classmethod
+	def preset_model(cls,session=None):
+
+		result = _Manage_model.get_preset_model(session)
+		result  = json.loads(result.data.decode('utf-8'))
+		LOGGER.info(result)
+		return result
+
+	@classmethod
+	def predict_machine(cls,session=None):
+
+		result = _Manage_model.get_predict_instance_types(session)
+		result  = json.loads(result.data.decode('utf-8'))
+		LOGGER.info(result)
+		return result
+
+	@classmethod
+	def predict_framework(cls,session=None):
+
+		result = _Manage_model.get_predict_framework_list(session)
+		result = json.loads(result.data.decode('utf-8'))
+		LOGGER.info(result)
+		return result
+
+	@classmethod
+	def destory_model(cls, session=None, model_id = None):
+
+		result = _Manage_model.delete_model(session,model_id)
+		result = json.loads(result.data.decode('utf-8'))
+		LOGGER.info(result)
+		return result
+
+	@classmethod
+	def destory_model_version(cls, session=None, model_version_id = None):
+		
+		result  = _Manage_model.delete_model_version(session,model_version_id)
+		result = json.loads(result.data.decode('utf-8'))
+		LOGGER.info(result)
+		return result
+
+class _Manage_model(object):
 	""" A ModelMaker Model that can be created model, deployed model service and delete model endpoint. """
 
-	def __init__(self):
-
-		"""
-		Initialize a ModelMaker Model instance.
-		"""
 	@classmethod
 	def s3_user_code_upload(cls,session,path):
 		if path is None:
@@ -214,497 +199,236 @@ class ModelApiBase(with_metaclass(ABCMeta, object)):
 		else:
 			raise TypeError("code_dir must be string !!")
 
-	def check_params(self, flag, **kwargs):
+	@classmethod
+	def check_model_params(cls, model_params):
 		""" Checking the model parameters validity from console
-		 Args:
-			 kwargs(dict): creating model parameters or deploying service parameters
-		"""
-		if flag == 1:
-			Framework_type = ["BASIC_FRAMEWORK","PRESET_MODEL","CUSTOM"]
-			#config_set = set(kwargs.keys()) - CREATE_MODEL_PARAMS
-			#if len(config_set) == 0:
-			if kwargs['model_framework_type'] == None or kwargs['model_framework_type'] not in Framework_type:
-					raise ValueError('framework_type is must setted in "BASIC_FRAMEWORK","PRESET_MODEL","CUSTOM" ')
-			else:
-				self._generate_model_params(model_params=kwargs)
-			#else:
-				raise ValueError('The input params: %s for creating model is surplus' % config_set)
-		elif flag == 2:
-			service_input = set(kwargs.keys())
-			if service_input == DEPLOY_SERVICE_PARAMS:
-					service_models_input = set(kwargs['service_models'][0].keys())
-					if 'resourcePoolType' not in service_models_input:
-						kwargs['service_models'][0]['resourcePoolType'] = "PUBLIC_POOL"
-					else:
-						if kwargs['service_models'][0]['resourcePoolType'] not in ["PUBLIC_POOL","PERSONAL_POOL"]:
-							raise ValueError('resourcePoolType is must set PUBLIC_POOL or PERSONAL_POOL')
-					if 'weight' in service_models_input and 'resourceId' in service_models_input and 'instanceCount' in service_models_input:
-
-						if 'modelVersionId' not in service_models_input and self.model_version_id:
-								kwargs['service_models'][0]['modelVersionId'] = self.model_version_id
-								self._generate_service_params(service_params=kwargs)
-						elif 'modelVersionId' in service_models_input and self.model_version_id:
-								tmp_model_version_id = kwargs['service_models'][0]['modelVersionId']
-								if tmp_model_version_id == self.model_version_id:
-									self._generate_service_params(service_params=kwargs)
-								else:
-									LOGGER.warning("Current model_version_id %s, bug it will create model by model_version_id :%s"%(str(self.model_version_id),tmp_model_version_id))
-									self._generate_service_params(service_params=kwargs)
-						elif 'modelVersionId' in service_models_input and self.model_version_id is None:
-								self._generate_service_params(service_params=kwargs)
-						else:
-							raise ValueError('Please use create_model first, or input parameter service_models=[{modelVersionId:]}')
-					else:
-						raise ValueError('The input parameter at least require %s' % 'weight/resourceId/instanceCount')
-			else:
-				raise ValueError('The input parameter require %s' % DEPLOY_SERVICE_PARAMS)
-
-	def _generate_model_params(self, model_params):
-		""" Processing and generating the model create parameters:
-			[model_name, model_version, source_location, model_type, execution_code]
-
-			Args:
-				model_params: the model parameters
 		"""
 		_config = {}
-		if model_params['model_framework_type'] == "BASIC_FRAMEWORK":
-			#if model_params.get('model_name') and model_params.get('model_framework_type') and model_params.get('model_version') \
-			#				and model_params.get('model_framework') and model_params.get('model_path') and (model_params.get('model_code_dir') or model_params.get('model_git_info')):
-			validate(instance=model_params,schema=Schema_json.Basic_Model)
-			#_config['name'] = model_params['model_name']
-			#_config['type'] = model_params['model_framework_type']
-			#_config['version'] = model_params['model_version']
-			#_config['frameworkId'] = model_params['model_framework']
-			#_config['modelPath'] = model_params['model_path']
-			#result = self.get_predict_framework_list()
-			#result = json.loads(result.data.decode('utf-8'))
-			#frameworkId_list = [ item['id'] for item in result['frameWorks']]
-			#if _config['frameworkId'] not in frameworkId_list:
-			#	raise ValueError("model_framwork is not exist, please check it!")
-			#if 'model_code_dir' in model_params:
-			#	_config['codeUrl'] = ModelApiBase.s3_user_code_upload(self.session, model_params['model_code_dir'])
-			#if 'model_git_info' in model_params:
-			#	_config['gitInfo'] = model_params['model_git_info']
-			#if 'model_boot_file' in model_params:
-			#	_config['startup'] = model_params['model_boot_file']
-			#if 'model_call_specs' in model_params:
-			#	_config['callSpecs'] = model_params['model_call_specs']
-			#else:
-			#	raise ValueError("when model_framework_type = BASIC_FRAMEWORK is set, model_<name|version|framework|path|code_dir/gitInfo]> must set")
-			pdb.set_trace()
-		elif model_params['model_framework_type'] == "PRESET_MODEL":
-			if model_params.get('model_name') and model_params.get('model_framework_type')  and model_params.get('model_version') \
-							and model_params.get('model_framework') and model_params.get('model_path'):
-				_config['name'] = model_params['model_name']
-				_config['type'] = model_params['model_framework_type']
-				_config['version'] = model_params['model_version']
-				_config['presetModelId'] = model_params['model_framework']
-				_config['modelPath'] = model_params['model_path']
-				result = self.get_preset_model()
-				result = json.loads(result.data.decode('utf-8'))
-				preset_model_list = [ item['id'] for item in result['presetModels']]
-				if _config['presetModelId'] not in preset_model_list:
-					raise ValueError("model_framwork is not exist, please check it!")
-			else:
-				raise ValueError("when model_framework_type = PRESET_MODEL is set, model_<name|version|framework|path> must set")
+		Framework_type = ["BASIC_FRAMEWORK","PRESET_MODEL","CUSTOM"]
+		if model_params.model_framework_type == None or model_params.model_framework_type not in Framework_type:
+				raise ValueError('framework_type is must setted in "BASIC_FRAMEWORK","PRESET_MODEL","CUSTOM" ')
+		if model_params.model_framework_type == "BASIC_FRAMEWORK":
+			_config['name'] = model_params.model_name
+			_config['type'] = model_params.model_framework_type
+			_config['version'] = model_params.model_version
+			_config['frameworkId'] = model_params.model_framework
+			_config['modelPath'] = model_params.model_path
+			_config['gitInfo'] = model_params.model_git_info
+			_config['startup'] = model_params.model_boot_file
+			_config['callSpecs'] = model_params.model_call_specs
+			_config['codeUrl'] = model_params.model_code_dir
+			validate(instance=_config,schema=Schema_json.Basic_Model)
+			result = _Manage_model.get_predict_framework_list(model_params.modelmaker_session)
+			result = json.loads(result.data.decode('utf-8'))
+			frameworkId_list = [ item['id'] for item in result['frameWorks']]
+			if _config['frameworkId'] not in frameworkId_list:
+				raise ValueError("model_framwork is not exist, please check it!")
+			_config['codeUrl'] = _Manage_model.s3_user_code_upload(model_params.modelmaker_session, model_params.model_code_dir)
+		elif model_params.model_framework_type == "PRESET_MODEL":
+			_config['name'] = model_params.model_name
+			_config['type'] = model_params.model_framework_type
+			_config['version'] = model_params.model_version
+			_config['presetModelId'] = model_params.model_framework
+			_config['modelPath'] = model_params.model_path
+			result = _Manage_model.get_preset_model(model_params.modelmaker_session)
+			result = json.loads(result.data.decode('utf-8'))
+			preset_model_list = [ item['id'] for item in result['presetModels']]
+			if _config['presetModelId'] not in preset_model_list:
+				raise ValueError("model_framwork is not exist, please check it!")
 
-
-		elif model_params['model_framework_type'] == "CUSTOM":
-			if model_params.get('model_name') and model_params.get('model_framework_type')  and model_params.get('model_version') \
-							and model_params.get('model_mirrorUrl'):
-
-				_config['name'] = model_params['model_name']
-				_config['type'] = model_params['model_framework_type']
-				_config['version'] = model_params['model_version']
-				if 'model_path' in model_params:
-					_config['modelPath'] = model_params['model_path']
-				_config['mirrorUrl'] = model_params['model_mirrorUrl']
-			else:
-				raise ValueError("when model_framework_type = CUSTOM is set, model_<name|version|mirrorUrl|path> must set")
-
-		self.create_model_body = _config
+			self._generate_model_params(model_params=kwargs)
+		elif model_params.model_framework_type == "CUSTOM":
+			_config['name'] = model_params.model_name
+			_config['type'] = model_params.model_framework_type
+			_config['version'] = model_params.model_version
+			_config['modelPath'] = model_params.model_path
+			_config['mirrorUrl'] = model_params.model_mirrorUrl
 		LOGGER.debug("=============Model:%s==================="%(_config['type']))
 		LOGGER.debug(_config)
 
-	def _generate_service_params(self, service_params):
-		_config = {}
-		if service_params['service_models'][0]['instanceCount'] is None:
-			raise ValueError("instanceCount must set!")
-		elif isinstance(service_params['service_models'][0]['instanceCount'],int) == False:
-			raise ValueError("instanceCount must type of int!")
-		elif service_params['service_models'][0]['instanceCount'] > 10:
-			raise ValueError("instanceCount must < 10!")
-
-		_config['name'] = service_params['service_name']
-		_config['type'] = service_params['service_type']
-		_config['serviceModels'] = service_params['service_models']
-
-		result = self.get_predict_instance_types()
-		result = json.loads(result.data.decode('utf-8'))
-		resourceId_list = [ item['id'] for item in result['resources']]
-		if _config['serviceModels'][0]['resourceId'] not in resourceId_list:
-			raise ValueError("service_models['resourceId'] is not exist, please check it!")
-		self.deploy_service_body = _config
-		LOGGER.debug("=============Delopy===================")
-		LOGGER.debug(_config)
+		return _config
 	
-
-#	@abstractmethod
-#	def create_modelarts_model(self):
+#	def is_reach_maximum_times(self, max_attempt_times):
+#		if max_attempt_times > MAXIMUM_RETRY_TIMES:
+#			return True
+#		else:
+#			return False
+#
+#	def create_modelmaker_model_version(self,model_id):
 #		""" Creating model
 #			Args:
 #				session: Building interactions with Wangsu Cloud service.
 #			Returns:
 #				The model id that created successfully, will be used in deploying service.
 #		"""
-#		pass
+#		self.model_id = model_id
+#		model_create_resp = self.model_api.create_the_version_model(project_id=self.session.project_id,
+#																body=self.create_model_body, model_id=self.model_id)
+#		data = json.loads(model_create_resp.data.decode('utf-8'))
+#		LOGGER.info("=============%s====================="%('Model Response'))
+#		LOGGER.info(data)
+#		self.model_version_id = data['versionId']
 #
-
-#	@abstractmethod
-#	def deploy_modelarts_predictor(self):
-#		""" Deploying model predictor
-#			Args:
-#				session: Build interactions with Wangsu Cloud Service.
-#			Returns:
-#				Predictor.
-#		"""
-#		pass
-#
-#	@abstractmethod
-#	def delete_model_endpoint(self):
-#		""" Deleting model endpoint, including model and service.
-#			It will print the deleting result.
-#			Args:
-#				 session: Building interactions with Wangsu Cloud Service.
-#				 model(dict): including model id
-#				 servide(dict): including service id
-#		"""
-#		pass
-#
-	def is_reach_maximum_times(self, max_attempt_times):
-		if max_attempt_times > MAXIMUM_RETRY_TIMES:
-			return True
+	@classmethod
+	def create_modelmaker_model(cls, Model, model_name):
+		""" Creating model
+			Args:
+				session: Building interactions with Wangsu Cloud service.
+			Returns:
+				The model id that created successfully, will be used in deploying service.
+		"""
+		_config = _Manage_model.check_model_params(Model)
+		body = _config
+		print(body)
+		#pdb.set_trace()
+		project_id = Model.modelmaker_session.project_id
+		if Model.modelmaker_session.auth == 'token':
+			model_api = ModelApi(Model.modelmaker_session.client)
+			model_create_resp = model_api.create_the_model(project_id=project_id, body=body)
+			data = json.loads(model_create_resp.data.decode('utf-8'))
+			if data.get('errorCode'):
+				if data['errorCode'] == 101009:
+					result = _Manage_model.get_model_info(Model.modelmaker_session,model_id=None)
+					result = json.loads(result.data.decode('utf-8'))
+					for item in result['models']:
+						if item['name'] == model_name:
+							model_id = item['id']
+							model_create_resp = model_api.create_the_version_model(project_id=project_id,
+														body= body, model_id= model_id)
+							data = json.loads(model_create_resp.data.decode('utf-8'))
+							if data.get('errorCode'):
+								raise Exception("create model  error!")
+							LOGGER.info("=============%s==================="%('Model Response'))
+							LOGGER.info(data)
+							return data
+				else:
+					raise Exception("create model  error!")
+			LOGGER.info("=============%s==================="%('Model Response'))
+			LOGGER.info(data)
+			return data
 		else:
-			return False
+			data = 0
+			return data
+			#return model_create_resp
 
-#	@abstractmethod
-#	def get_model_list(self):
-#		"""
-#		return User model list
-#		"""
-#		pass
-#
-#	@abstractmethod
-#	def get_model_info(self):
-#		"""
-#		:return model information.
-#		"""
-#		pass
-#
-#
-#	@abstractmethod
-#	def get_model_version_info(self):
-#		"""
-#		:return model information.
-#		"""
-#		pass
-#
-#	@abstractmethod
-#	def _get_service_list(self):
-#		"""
-#		return User service list
-#		"""
-#		pass
-#
-#	@abstractmethod
-#	def _get_service_info(self):
-#		"""
-#		return: the service information
-#		"""
-#		pass
-#
-#	@abstractmethod
-#	def delete_model_version(self):
-#		"""
-#		return: delete model endpoint
-#		"""
-#		pass
-#
-#
-#	@abstractmethod
-#	def delete_model(self):
-#		"""
-#		return: delete model endpoint
-#		"""
-#		pass
-#
-#	@abstractmethod
-#	def delete_service(self):
-#		"""
-#		return: delete service endpoint
-#		"""
-#		pass
-
-class ModelApiAccountImpl(ModelApiBase):
-	""" A ModelMaker Model that can be created model, deployed model service and delete model endpoint. """
-
-	def __init__(self, session):
-
+	@classmethod
+	def get_predict_instance_types(cls,modelmaker_session):
+		""" get_preset_model
 		"""
-		Initialize a ModelMaker Model instance.
-		"""
-		self.session = session
-		self.model_api = ModelApi(self.session.client)
-		self.service_api = ServiceApi(self.session.client)
-		self.framework_api = FrameworkApi(self.session.client)
-		self.spec_api = SpecApi(self.session.client)
-		self.model_id	= None
-		self.model_version_id = None
-		self.service_id = None
+		spec_api = SpecApi(modelmaker_session.client)
 
-	def create_modelmaker_model_version(self,model_id):
-		""" Creating model
-			Args:
-				session: Building interactions with Wangsu Cloud service.
-			Returns:
-				The model id that created successfully, will be used in deploying service.
-		"""
-		self.model_id = model_id
-		model_create_resp = self.model_api.create_the_version_model(project_id=self.session.project_id,
-																body=self.create_model_body, model_id=self.model_id)
-		data = json.loads(model_create_resp.data.decode('utf-8'))
-		LOGGER.info("=============%s====================="%('Model Response'))
-		LOGGER.info(data)
-		self.model_version_id = data['versionId']
+		body={}
+		return spec_api.list_spec(project_id=modelmaker_session.project_id,body=body,env="PREDICT")
 
-	def create_modelmaker_model(self, model_name):
-		""" Creating model
-			Args:
-				session: Building interactions with Wangsu Cloud service.
-			Returns:
-				The model id that created successfully, will be used in deploying service.
-		"""
-		model_create_resp = self.model_api.create_the_model(project_id=self.session.project_id,
-															body=self.create_model_body)
-		data = json.loads(model_create_resp.data.decode('utf-8'))
-		if data.get('errorCode'):
-			if data['errorCode'] == 101009:
-				result = self.get_model_info()
-				result = json.loads(result.data.decode('utf-8'))
-				for item in result['models']:
-					if item['name'] == model_name:
-						self.model_id = item['id']
-						model_create_resp = self.model_api.create_the_version_model(project_id=self.session.project_id,
-																	body=self.create_model_body, model_id=self.model_id)
-						data = json.loads(model_create_resp.data.decode('utf-8'))
-						LOGGER.info("=============%s==================="%('Model Response'))
-						LOGGER.info(data)
-						if data.get('errorCode'):
-							raise Exception("create model  error!")
-						else:
-							self.model_version_id = data['versionId']
-							return model_create_resp
-				raise Exception("create model  error!")
-			else:
-				raise Exception("create model  error!")
-		LOGGER.info("=============%s==================="%('Model Response'))
-		LOGGER.info(data)
-		self.model_id = data['id']
-		self.model_version_id = data['versionId']
-		return model_create_resp
-
-	def deploy_modelmaker_predictor(self):
-		""" Deploying model service
-			Args:
-				session: Build interactions with Wangsu Cloud Service.
-			Returns:
-				Predictor.
-		"""
-		service_deploy_resp = self.service_api.create_service(project_id=self.session.project_id,
-															  body=self.deploy_service_body)
-		#data = json.loads(service_deploy_resp.data.decode('utf-8'))
-		data = str(service_deploy_resp.data, encoding="utf-8")
-		data = eval(data)
-		LOGGER.info("=============%s==================="%('Service Response'))
-		LOGGER.info(data)
-		if data.get('errorCode'):
-				raise Exception("create service  error!")
-		self.service_id = data['id']
-	
-#		count_status_query_times = 0
-#		while True:
-#			service_query_resp = self._get_service_info()
-#			data = json.loads(service_query_resp.data.decode('utf-8'))
-#			if data.get('errorCode'):
-#				raise Exception("get service  info error!")
-#
-#			if super(ModelApiAccountImpl, self).is_reach_maximum_times(count_status_query_times):
-#				print(
-#					"Reach the maximum service status query times, the current status is %s" % data['status'])
-#				break
-#
-#			if data['status'] == 'RUNNING':
-#				print("\nDeploy finished")
-#				break
-#			elif data['status'] == 'DEPLOYING':
-#				if count_status_query_times == 0:
-#					print("\nDeploying...")
-#				count_status_query_times += 1
-#				time.sleep(MODEL_WAIT_SECOND)
-#			elif data['status'] == 'DEPLOYING_FAIL':
-#				print("\nDeploying failed")
-#				break
-#			elif data['status'] == 'STOPPING':
-#				print("\nStopping")
-#			elif data['status'] == 'STOPPED':
-#				print("\nStopped")
-#				break
-#			else:
-#				time.sleep(MODEL_WAIT_SECOND)
-#		
-		return PredictorApiAccountImpl(self.session, self.service_id)
-
-#	def delete_model_endpoint(self, model_id=None, service_id=None):
-#		""" Deleting model endpoint, including model and service.
-#			It will print the deleting result.
-#			Args:
-#				 session: Building interactions with Wangsu Cloud Service.
-#				 model(dict): including model id
-#				 servide(dict): including service id
-#		"""
-#		if service_id is not None:
-#			self.delete_service(service_id=service_id)
-#			count_service_retry_times = 0
-#			while True:
-#				count_service_retry_times += 1
-#				if super(ModelApiAccountImpl, self).is_reach_maximum_times(count_service_retry_times):
-#					print("Can't get the service %s delete information." % service_id)
-#					break
-#
-#				services_list = self._get_service_list()
-#				if service_id in [tmp.service_id for tmp in services_list.services]:
-#					time.sleep(MODEL_WAIT_SECOND)
-#				else:
-#					print('Delete the service %s endpoint successfully.' % service_id)
-#					break
-#
-#		if model_id is not None:
-#			self.delete_model(model_id=model_id)
-#			count_model_retry_times = 0
-#			while True:
-#				count_model_retry_times += 1
-#				if super(ModelApiAccountImpl, self).is_reach_maximum_times(count_model_retry_times):
-#					print("Can't get the model %s delete information." % model_id)
-#					break
-#
-#				model_list = self.get_model_list()
-#				if model_id in [tmp.model_id for tmp in model_list.models]:
-#					time.sleep(MODEL_WAIT_SECOND)
-#				else:
-#					print('Delete the model %s endpoint successfully.' % model_id)
-#					break
-
-	def get_predict_instance_types(self):
+	@classmethod
+	def get_predict_framework_list(cls,modelmaker_session):
 		""" get_preset_model
 		"""
 
+		framework_api = FrameworkApi(modelmaker_session.client)
 		body={}
-		return self.spec_api.list_spec(project_id=self.session.project_id,body=body,env="PREDICT")
+		return framework_api.get_framework_id(project_id=modelmaker_session.project_id, body=body, env="PREDICT")
 
-	def get_predict_framework_list(self):
+	@classmethod
+	def get_preset_model(cls,modelmaker_session):
 		""" get_preset_model
 		"""
-
+		model_api = ModelApi(modelmaker_session.client)
 		body={}
-		return self.framework_api.get_framework_id(project_id=self.session.project_id, body=body, env="PREDICT")
+		return model_api.get_preset_model(project_id=modelmaker_session.project_id, body=body)
 
-	def get_preset_model(self):
-		""" get_preset_model
-		"""
-
-		body={}
-		return self.model_api.get_preset_model(project_id=self.session.project_id, body=body)
-
-	def delete_model(self, model_id = None):
+	@classmethod
+	def delete_model(cls, modelmaker_session, model_id = None):
 		""" Only delete model endpoint
 		"""
 		if model_id is None:
 			raise ValueError('model_id is need!!!')
 
+		model_api = ModelApi(modelmaker_session.client)
 		body={}
-		return self.model_api.delete_model(project_id=self.session.project_id, body=body, model_id=model_id)
+		return model_api.delete_model(project_id=modelmaker_session.project_id, body=body, model_id=model_id)
 
-	def delete_model_version(self, model_version_id = None):
+	@classmethod
+	def delete_model_version(cls, modelmaker_session, model_version_id = None):
 		""" Only delete model endpoint
 		"""
-		if model_version_id is None and self.model_version_id:
-			model_version_id = self.model_version_id
-		elif model_version_id and self.model_version_id and model_version_id != self.model_version_id:
-			print("Current model_version_id is %s, but it will replace by model_version_id %s"%(str(self.model_version_id),str(model_version_id)))
-		elif model_version_id is None and self.model_version_id is None:
-			raise ValueError("model_version_id is need, please create model first or model_version_id=xxx")
+		if model_version_id is None:
+			raise ValueError('model_version_id is need!!!')
+
+		model_api = ModelApi(modelmaker_session.client)
 		body = {}
 
-		return self.model_api.delete_model_version(project_id=self.session.project_id, body=body, model_version_id=model_version_id)
+		return model_api.delete_model_version(project_id=modelmaker_session.project_id, body=body, model_version_id=model_version_id)
 
-
-	def delete_service(self, service_id = None):
+	@classmethod
+	def delete_model_version_instance(cls, modelmaker_session, model_version_id = None):
 		""" Only delete model endpoint
 		"""
-		if service_id is None and self.service_id:
-			service_id = self.service_id
-		elif service_id and self.service_id and service_id != self.service_id:
-			print("Current model_version_id is %s, but it will replace by model_version_id %s"%(str(self.service_id),str(service_id)))
-		elif service_id is None and self.service_id is None:
-			raise ValueError("service_id is need, please create deploy_predictor first or service_id=xxx")
+		if model_version_id is None:
+			raise ValueError('model_version_id is need!!!')
 
+		model_api = ModelApi(modelmaker_session.client)
+		body = {}
 
-		body={}
-		return self.service_api.delete_micro_service(project_id=self.session.project_id, body=body, service_id=service_id)
+		return model_api.delete_model_version(project_id=modelmaker_session.project_id, body=body, model_version_id=model_version_id)
 
-
-	def get_model_info(self, model_id=None):
+	@classmethod
+	def get_model_info(cls, modelmaker_session, model_id=None):
 		"""
 		:return model information.
 		"""
-#		if model_id is None:
-#			raise ValueError('model_id is need!!!')
+		#if model_id is None:
+		#	raise ValueError('model_id is need!!!')
 
+		model_api = ModelApi(modelmaker_session.client)
 		body={}
-		return self.model_api.get_model_info(project_id=self.session.project_id, model_id=model_id, body=body)
+		return model_api.get_model_info(project_id=modelmaker_session.project_id, model_id=model_id, body=body)
 
-
-	def get_model_version_info(self, model_version_id=None):
-		"""
-		:return model information.
-		"""
-		if model_version_id is None and self.model_version_id:
-			model_version_id = self.model_version_id
-		elif model_version_id and self.model_version_id and model_version_id != self.model_version_id:
-			print("Current model_version_id is %s, but it will replace by model_version_id %s"%(str(self.model_version_id),str(model_version_id)))
-		elif model_version_id is None and self.model_version_id is None:
-			raise ValueError("model_version_id is need, please create model first or model_version_id=xxx")
-
-		body={}
-		return self.model_api.get_model_version_info(project_id=self.session.project_id, model_version_id=model_version_id, body=body)
-
-	def get_model_version_status(self, model_version_id=None):
+	@classmethod
+	def get_model_version_info_global(cls, modelmaker_session,model_version_id=None):
 		"""
 		:return model information.
 		"""
 		if model_version_id is None:
-			if hasattr(self,'model_version_id'):
-				model_version_id = self.model_version_id
-			else:
-				raise ValueError('please use create_model method first or version_id is need!!!')
-	
-		body={}
-		return self.model_api.get_model_version_info(project_id=self.session.project_id, model_version_id=model_version_id, body=body)
+			raise ValueError('model_version_id is need!!!')
 
-	def _get_service_info(self):
-		"""
-		return: the service information
-		"""
+		model_api = ModelApi(modelmaker_session.client)
 		body={}
-		return self.service_api.get_service_info(project_id=self.session.project_id, body=body, service_id=self.service_id)
+		return model_api.get_model_version_info(project_id=modelmaker_session.project_id, model_version_id=model_version_id, body=body)
+
+
+	@classmethod
+	def get_model_version_info_instance(cls, modelmaker_session,model_version_id=None):
+		"""
+		:return model information.
+		"""
+		model_api = ModelApi(modelmaker_session.client)
+		body={}
+		return model_api.get_model_version_info(project_id=modelmaker_session.project_id, model_version_id=model_version_id, body=body)
+
+class Model(ModelBase):
+	"""
+	A ModelMaker Model that can be created model, deployed model service,
+	got model info and list, and deleted model and service endpoint.
+	"""
+	def __init__(self, modelmaker_session=None, model_name=None, model_version=None, model_path=None, model_framework=None, model_framework_type=None,
+				 model_code_dir=None, model_boot_file=None, model_call_specs=None, model_description=None, model_mirrorUrl=None,
+				 model_git_info=None,**kwargs):
+		"""
+		Initialize a model, determine the model authorize type.
+		param session: Building interactions with Wangsu Cloud service.
+		"""
+		self.model_name = model_name
+		self.model_version = model_version
+		self.model_path = model_path
+		self.model_framework = model_framework
+		self.model_framework_type = model_framework_type
+		self.model_code_dir = model_code_dir
+		self.model_boot_file = model_boot_file
+		self.model_call_specs = model_call_specs
+		self.model_description = model_description
+		self.model_mirrorUrl = model_mirrorUrl
+		self.model_git_info = model_git_info
+		self.modelmaker_session = modelmaker_session
+		super(Model, self).__init__(**kwargs)
 

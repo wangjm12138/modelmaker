@@ -1,0 +1,103 @@
+{
+	"title": "predictor",
+	"description": "This is for deploying model service api parameter check",
+    "type": "object",
+    "properties": {
+		"name": {
+				"type": "string",
+				"minLength": 1,
+				"maxLength": 64
+		},
+		"type": {
+				"type": "string",
+				"pattern": "ONLINE_SERVICE"
+		},
+		"serviceModels": {
+    			"type": "array",
+				"items": {
+	    			"type": "object",
+	    			"properties": {
+						"modelVersionId":{
+							"type": "number"
+						},
+						"weight": {
+							"type": "number"
+						},
+						"resourceId": {
+							"type": "number"
+						},
+						"instanceCount": {
+							"type": "number",
+							"maximum": 10
+						},
+				        "resourcePoolType": {
+	 		                "type": "string",
+							"enum": ["PUBLIC_POOL","PERSONAL_POOL"]
+				        },
+						"envs": {
+    						"type": "array",
+							"items": {
+	    						"type": "object"
+							}
+						},
+						"customResource": {
+		    					"type": "object",
+		    					"properties": {
+					        		"cpu": {
+										"anyOf": [
+		                    				{"type": "number"},
+		                    				{"type": "null"}
+		                				]
+									},
+					        		"memory": {
+										"anyOf": [
+		                    				{"type": "number"},
+		                    				{"type": "null"}
+		                				]
+									},
+					        		"gpuModel": {
+										"anyOf": [
+		                    				{"type": "string"},
+		                    				{"type": "null"}
+		                				]
+									},
+									"gpuCount": {
+										"anyOf": [
+		                    				{"type": "number"},
+		                    				{"type": "null"}
+		                				]
+									},
+					        		"requestCpu": {
+										"anyOf": [
+		                    				{"type": "null"},
+		                    				{"type": "number"}
+		                				]
+									},
+					        		"requestMemory": {
+										"anyOf": [
+		                    				{"type": "number"},
+		                    				{"type": "null"}
+		                				]
+									},
+					        		"shareGpu": {
+										"anyOf": [
+		                    				{"type": "number"},
+		                    				{"type": "null"}
+		                				]
+									},
+					        		"gpuz": {
+										"anyOf": [
+		                    				{"type": "number"},
+		                    				{"type": "null"}
+		                				]
+									}
+								},
+								"additionalProperties": false
+						}
+					},
+					"required": ["modelVersionId","weight","instanceCount","resourcePoolType"]
+			}
+		}
+    },
+	"required": ["name","type","serviceModels"]
+}

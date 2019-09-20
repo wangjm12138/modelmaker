@@ -46,10 +46,7 @@
 				"type": "string"
 		},
 		"startupType": {
-				"anyOf" : [
-					{"type": "string","enum": ["NORMAL","HOROVOD"]},
-					{"type": "null"}
-				]
+					"type": "string","enum": ["NORMAL","HOROVOD"]
 		},
 		"parameters": {
 				"anyOf": [

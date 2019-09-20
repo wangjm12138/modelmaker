@@ -35,11 +35,14 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		self.access_key = modelmaker_session.access_key
 		self.secret_key = modelmaker_session.secret_key
 		self.client = modelmaker_session.client
-#		 self.project_id = modelmaker_session.project_id
-		self.model_api = Model(modelmaker_session)
 		self.log_id = 0
 		self.last_time = 0
 		self.last_nan = 0
+		self.model_instance = None
+		self.predictor_instance = None
+		self.model_id = None
+		self.model_version_id = None
+		self.service_id = None
 
 	def _prepare_for_training(self, job_name=None):
 		if job_name is not None:
@@ -194,7 +197,7 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		return _TrainingJob.get_spec_list(modelmaker_session,env)
 
 	@classmethod
-	def version_info(cls, modelmaker_session, version_id):
+	def train_version_info(cls, modelmaker_session, version_id):
 		result =  _TrainingJob.get_job_version_info(modelmaker_session, version_id)
 		LOGGER.info(result)
 		return result
@@ -204,7 +207,7 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		return  _TrainingJob.get_job_version_info(modelmaker_session, version_id)
 
 	@classmethod
-	def Info(cls, modelmaker_session, job_id=None):
+	def train_list(cls, modelmaker_session, job_id=None):
 		result = _TrainingJob.get_job_info(modelmaker_session, job_id=job_id)
 		LOGGER.info(result)
 		return result
@@ -356,6 +359,8 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 			if kwargs.get('model_name') == None:
 				if self.job_name != None:
 					kwargs['model_name'] = self.job_name
+			if 'modelmaker_session' not in kwargs.keys():
+				kwargs['modelmaker_session']=self.modelmaker_session
 
 			if kwargs.get('model_framework_type') == None:
 				if self.framework_type == None:
@@ -394,8 +399,11 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 						kwargs['model_code_dir'] = _TrainingJob.s3_user_code_upload(self.modelmaker_session,kwargs['model_code_dir'])
 					else:
 						kwargs['model_framework_type'] = self.framework_type
-			create_model_resp = self.model_api.create_model(**kwargs)
-			return self.model_api
+			self.model_instance = Model(**kwargs)
+			data = self.model_instance.create_model()
+			self.model_id = data['id']
+			self.model_version_id = data['versionId']
+			return self.model_instance
 		else:
 			raise Exception("train job is not finish!")
 
@@ -408,10 +416,17 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 #			ISOTIMEFORMAT = '%m%d-%H%M%S'
 #			beijing_date = (datetime.now()+ timedelta(hours=8)).strftime(ISOTIMEFORMAT)
 #			kwargs['service_name'] = self.job_name + '-' + beijing_date
-		if kwargs.get('service_type') == None:
-			kwargs['service_type'] = "ONLINE_SERVICE"
-		deploy_model_resp = self.model_api.deploy_predictor(**kwargs)
-		return deploy_model_resp
+		if 'modelmaker_session' not in kwargs.keys():
+			kwargs['modelmaker_session'] = self.modelmaker_session
+		if isinstance(kwargs['predictor_models'],list) and isinstance(kwargs['predictor_models'][0],dict):
+			if "modelVersionId" not in kwargs['predictor_models'][0] and self.model_version_id != None:
+				kwargs['predictor_models'][0]['modelVersionId'] = self.model_version_id
+			else:
+				raise ValueError("predictor_models parameter must have modelVersionId or please create model first")
+
+		self.predictor_instance = Predictor(**kwargs)
+		self.service_id = self.predictor_instance.deploy_predictor()
+		return self.predictor_instance
 
 class _TrainingJob():
 
@@ -532,7 +547,7 @@ class _TrainingJob():
 		_config = _TrainingJob.prepare_config(estimator, inputs)
 
 		body = _config
-		pdb.set_trace()
+		#pdb.set_trace()
 		LOGGER.debug("=============Train:%s==================="%(_config['type']))
 		LOGGER.debug(body)
 		if estimator.modelmaker_session.auth == 'token':

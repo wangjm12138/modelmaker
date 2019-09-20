@@ -1,6 +1,7 @@
 import json
 from jsonschema import validate
 import sys
+#https://www.cnblogs.com/ChangAn223/p/11234348.html
 instance={
 	"name":"sfdsafg",
 	"type": "BASIC_FRAMEWORK",
@@ -52,7 +53,7 @@ try:
 	with open("../Basic_Framework.json",'r') as f:
 		train_preset_algorithm_schema = json.load(f)
 #except json.decoder.JSONDecodeError:
-except Exception e:
+except Exception as e:
 	print(e)
 	print("json format is error!!!")
 	sys.exit(0)

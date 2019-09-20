@@ -18,7 +18,7 @@ session = Session()
 ###//获取开发框架列表
 #Estimator.development_framework(session)
 ###//获取部署框架列表
-Estimator.predict_framework(session)
+#Estimator.predict_framework(session)
 ###//获取训练机器列表
 #Estimator.train_machine(session)
 ###//获取开发机器列表
@@ -27,11 +27,11 @@ Estimator.predict_framework(session)
 #Estimator.predict_machine(session)
 #------------训练详情
 ##//获取训练全部作业列表
-#Estimator.Info(session)
+#Estimator.train_list(session)
 ##//指定训练作业id，获取训练作业详情,id需存在!!!!，不然报错
-#Estimator.Info(session,job_id=503902)
+#Estimator.train_list(session,job_id=503902)
 ##//指定训练作业版本id，获取训练作业版本详情,version_id需存在!!!，不然报错
-#Estimator.version_info(session,version_id=502957)
+#Estimator.train_version_info(session,version_id=502957)
 #------------训练删除
 ##//指定训练作业id，删除全部的版本,id需存在!!!!，不然报错
 #Estimator.destory_job(session,job_id=12345)
@@ -105,6 +105,22 @@ Estimator.predict_framework(session)
 ##===================Predictor【实例方法】=======================
 
 #predictor_instance = Predictor(session,service_id=501250) #
+Predictor.service_list(session)
+#Predictor.service_info(session,service_id=502400)
+Predictor.service_machine(session)
+p=Predictor(modelmaker_session=session,
+		  	predictor_name="basic-new",
+			predictor_type="ONLINE_SERVICE",
+			predictor_models=[{"weight":100,"resourceId":502204,"instanceCount":1,"modelVersionId":502712}])
+p.deploy_predictor()
+p.stop()
+p.update(predictor_models=[{"weight":100,"resourceId":502204,"instanceCount":1,"modelVersionId":502708}])
+#p.info()
+#p.start()
+#p.stop()
+#p.delete()
+#Predictor.STOP(session,service_id=502400)
+#Predictor.DELETE(session,service_id=502400)
 
 ##//获取服务id对应详情，如果已经predictor_instance初始化已经有id，则不需要
 #predictor_instance.info()

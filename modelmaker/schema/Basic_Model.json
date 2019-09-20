@@ -45,11 +45,17 @@
                 ]
         },
 		"startup": {
-				"type": "string"
+                "anyOf": [
+                    {"type": "string"},
+                    {"type": "null"}
+                ]
 		},
 		"callSpecs": {
-				"type": "string"
+                "anyOf": [
+                    {"type": "string"},
+                    {"type": "null"}
+                ]
 		}
     },
-	"required": ["name","type","version","presetModelId","modelPath","codeUrl"]
+	"required": ["name","type","version","frameworkId","modelPath","codeUrl"]
 }
