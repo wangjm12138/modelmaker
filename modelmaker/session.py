@@ -155,7 +155,7 @@ class Session(object):
 				except Exception as e:
 						raise Exception("Get ak/sk failed! ", e)
 				self.access_key, self.secret_key, self.s3_endpoint_url, self.s3_region, self.s3_mirror_auth, self.s3_mirror_endpoint_url = res
-				if LOGGER_LEVEL == 10:
+				if int(LOGGER_LEVEL) == 10:
 					LOGGER.debug({'response':{'url':self.s3_endpoint_url,'ak':self.access_key,'sk':self.secret_key,'region':self.s3_region}})
 				else:
 					LOGGER.info({'response':{'url':self.s3_endpoint_url,'ak':self.access_key,'sk':self.secret_key.replace(self.secret_key,'*'*len(self.secret_key)),'region':self.s3_region}})
