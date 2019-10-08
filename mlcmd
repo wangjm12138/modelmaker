@@ -63,7 +63,7 @@ def user_input(input_str):
 def run_configure(file_path):
 	cfg = config()
 	options = [
-		("username", "User name", "Access key and Secret key are your identifiers for WCS"),
+		("username", "User name"),
 		("password", "Passord"),
 		("host_base", "Host_base", "Api interface"),
 		("region", "Region"),
