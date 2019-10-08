@@ -1,6 +1,6 @@
 __project__="modelmaker"
 # The version is auto-updated. Please do not edit.
-__version__="1.6.4"
+__version__="2.0.0"
 import modelmaker.config
 import modelmaker.client
 

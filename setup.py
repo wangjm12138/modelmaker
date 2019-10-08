@@ -4,7 +4,7 @@
 from setuptools import setup, find_packages
 
 setup(name='modelmaker',
-      version='1.6.4',
+      version='2.0.0',
       description='Wangsu ai sdk',
       author='wangjm',
       author_email='wangjm2@wangsu.com',
@@ -12,8 +12,9 @@ setup(name='modelmaker',
 	  url='https://github.com/AiModelMaker/ModelMaker',
       packages=find_packages(),
 	  include_package_data=True,
+	  scripts=['mlcmd'],
 	  license='MIT',
-      install_requires=['requests>=2.14.2', 'urllib3<1.25,>=1.21.1', 'boto3>=1.4.5','botocore>=1.5.92'],
+      install_requires=['requests>=2.14.2', 'urllib3<1.25,>=1.21.1', 'boto3>=1.4.5','botocore>=1.5.92','readline'],
       python_requires='>=3',
 	  classifiers=[
 		#   3 - Alpha
