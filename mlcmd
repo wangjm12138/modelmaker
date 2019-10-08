@@ -1,17 +1,20 @@
+#!/usr/bin/python
 ## -*-coding:utf-8-*-
 import sys
 import os
 import json
 import argparse
 import readline
+from sys import version_info
 from collections import OrderedDict
 from os.path import expanduser
+
 if os.path.exists(expanduser("~/.modelmaker")):
 	pass
 else:
 	os.mkdir(expanduser("~/.modelmaker"))
 
-config_file = os.path.join(expanduser("~/.modelmaker"), "config2.json")
+config_file = os.path.join(expanduser("~/.modelmaker"), "config.json")
 
 def output(message):
 	#sys.stdout.write(message + '\n')
@@ -50,6 +53,13 @@ class config(object):
 		with open(file_path,'w') as json_file:
 			json_file.write(json_str)	
 
+def user_input(input_str):
+	if version_info.major == 2:
+		val = raw_input(input_str)
+	else:
+		val = input(input_str)
+	return val
+
 def run_configure(file_path):
 	cfg = config()
 	options = [
@@ -79,7 +89,7 @@ def run_configure(file_path):
 
 				if len(option) >= 3:
 					output(u"\n%s" % option[2])
-				val = input(prompt + ": ")
+				val = user_input(prompt + ": ")
 				if val != "":
 					if type(getattr(cfg, option[0])) is bool:
 						val = val.lower().startswith('y')
@@ -87,11 +97,11 @@ def run_configure(file_path):
 			output(u"\nNew settings:")
 			for option in options:
 				output(u"  %s: %s" % (option[0], getattr(cfg, option[0])))
-			val = input("\nSave settings? [y/N] ")
+			val = user_input("\nSave settings? [y/N] ")
 			if val.lower().startswith("y"):
 				cfg.save(file_path)
 				break
-			val = input("Retry configuration? [Y/n] ")
+			val = user_input("Retry configuration? [Y/n] ")
 			if val.lower().startswith("n"):
 				raise EOFError()
 	except (EOFError, KeyboardInterrupt):
