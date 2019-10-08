@@ -464,6 +464,9 @@ class _TrainingJob():
 	@classmethod
 	def prepare_config(cls, estimator, inputs):
 		Framework_type = ["BASIC_FRAMEWORK","PRESET_ALGORITHM","CUSTOM"]
+		check_train_machine=True
+		nomally_custom_resource = {'cpu','memory','gpuModel','gpuCount'}
+		request_custom_resource = {'cpu','memory','gpuModel','gpuCount','requestCpu','requestMemory','shareGpu','gpuz'}
 		_config = {}
 		## nomally parameter
 		_config['name'] = estimator.job_name
@@ -473,11 +476,35 @@ class _TrainingJob():
 		_config['instance'] = estimator.train_instance_count
 		_config['maxRuntime'] = estimator.max_runtime
 		_config['description'] = estimator.description
-		## machine check
-		result = _TrainingJob.get_instance_types(estimator.modelmaker_session,'TRAIN')
-		resourceId_list = [ item['id'] for item in result['resources']]
-		if _config['resourceId'] not in resourceId_list:
-			raise ValueError("train_instance_type is not exist, please check it!")
+		##when resourcePoolType=PUBLIC_POOL must have resourceId
+		##when resourcePoolType=PERSONAL_POOL custom_resource is dict and like nomally_custom_resource/request_custom_resource
+		##when resourcePoolType=PERSONAL_POOL and resourceId is set at the same time,resourcePoolType=PERSONAL_POOL is valid
+		if estimator.resource_pool_type is None:
+			_config['resourcePoolType'] = "PUBLIC_POOL"
+		else:
+			_config['resourcePoolType'] = estimator.resource_pool_type
+		if _config['resourcePoolType'] == "PUBLIC_POOL":
+			if estimator.train_instance_type is None:
+				raise ValueError("train_instance_type must set when resource_pool_type=PUBLIC_POOL!")
+			_config['customResource'] = None
+		else:
+			if estimator.train_instance_type is None:
+				check_train_machine=False
+				real_custom_resource = set(estimator.custom_resource.keys())
+				if isinstance(estimator.custom_resource,dict) and real_custom_resource.issubset(request_custom_resource) \
+					and nomally_custom_resource.issubset(real_custom_resource):
+					_config['customResource'] = estimator.custom_resource
+					if estimator.tagName != None:
+						_config['tagName'] = estimator.tagName
+				else:
+					raise ValueError("Nomally format like : custom_resource={'cpu':2,'memory':2.5,'gpuModel':'K80','gpuCount':2} \
+						or Request format like : custom_resource={'cpu':2,'memory':2,'gpuModel':'K80','gpuCount':2, \
+						'requestCpu':1, 'requestMemory':1,'shareGpu':0,'gpuz':1.5}, Request format is minimum source to use")
+			else:
+				_config['customResource'] = estimator.custom_resource
+				if estimator.tagName != None:
+					_config['tagName'] = estimator.tagName
+
 		## framwork parameter
 		if estimator.framework_type == None or estimator.framework_type not in Framework_type:
 			 raise ValueError('framework_type is must setted in "BASIC_FRAMEWORK","PRESET_ALGORITHM","CUSTOM" ')
@@ -527,10 +554,18 @@ class _TrainingJob():
 				_config['dataUrl'] = inputs
 				_config['output'] = estimator.output_path
 				_config['monitors'] = estimator.monitors
+				config['codeVersion'] = estimator.code_version
 				## framwork parameter check by schema Custom.json
 				validate(instance=_config,schema=Schema_json.Custom)
 				## upload user code
 				_config['codeUrl'] = _TrainingJob.s3_user_code_upload(estimator.modelmaker_session,_config['codeUrl'])
+
+		## machine check
+		if check_train_machine:
+			result = _TrainingJob.get_instance_types(estimator.modelmaker_session,'TRAIN')
+			resourceId_list = [ item['id'] for item in result['resources']]
+			if _config['resourceId'] not in resourceId_list:
+				raise ValueError("train_instance_type is not exist, please check it!")
 
 		return _config
 
@@ -782,7 +817,7 @@ class Estimator(EstimatorBase):
 
 	def __init__(self, code_dir=None, code_version=None, boot_file=None, boot_type=None, hyperparameters=None, framework = None, framework_type=None, algorithm=None, 
 				 input_files=None, model_name=None, init_model=None, env=None, user_image_url=None, user_command=None, user_command_args=None,
-				 monitors=None, job_description=None, git_info=None, description=None, **kwargs):
+				 monitors=None, job_description=None, git_info=None, description=None, tagName=None, **kwargs):
 
 		self.code_dir = code_dir
 		self.code_version = code_version
@@ -803,6 +838,7 @@ class Estimator(EstimatorBase):
 		self.git_info = git_info
 		self.job_description = job_description
 		self.description = description
+		self.tagName = tagName
 
 		super(Estimator, self).__init__(**kwargs)
 

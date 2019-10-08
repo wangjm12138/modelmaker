@@ -94,7 +94,10 @@
 				]
 		},
 		"resourceId": {
-				"type": "number"
+			"anyOf": [
+				{"type": "number"},
+				{"type": "null"}
+			]
 		},
 		"volumeSize": {
 				"type": "number",
@@ -120,6 +123,67 @@
 					{"type": "null"}
 				]
 		},
+		"resourcePoolType": {
+		    "type": "string",
+		    "enum": ["PUBLIC_POOL","PERSONAL_POOL"]
+		},
+		"customResource": {
+				"anyOf": [
+					{"type": "object",
+			        "properties": {
+			            "cpu": {
+			                "anyOf": [
+			                    {"type": "number"},
+			                    {"type": "null"}
+			                ]
+			            },
+			            "memory": {
+			                "anyOf": [
+			                    {"type": "number"},
+			                    {"type": "null"}
+			                ]
+			            },
+			            "gpuModel": {
+			                "anyOf": [
+			                    {"type": "string"},
+			                    {"type": "null"}
+			                ]
+			            },
+			            "gpuCount": {
+			                "anyOf": [
+			                    {"type": "number"},
+			                    {"type": "null"}
+			                ]
+			            },
+			            "requestCpu": {
+			                "anyOf": [
+			                    {"type": "null"},
+			                    {"type": "number"}
+			                ]
+			            },
+			            "requestMemory": {
+			                "anyOf": [
+			                    {"type": "number"},
+			                    {"type": "null"}
+			                ]
+			            },
+			            "shareGpu": {
+			                "anyOf": [
+			                    {"type": "number"},
+			                    {"type": "null"}
+			                ]
+			            },
+			            "gpuz": {
+			                "anyOf": [
+			                    {"type": "number"},
+			                    {"type": "null"}
+			                ]
+			            }
+			        },
+			        "additionalProperties": false},
+					{"type": "null"}
+				]
+		},
 		"description": {
 				"anyOf": [
 					{"type": "null"},
@@ -130,5 +194,5 @@
 				]
 		}
     },
-	"required": ["name","frameworkId","codeUrl","startup","startupType","dataUrl","output","resourceId","volumeSize","instance"]
+	"required": ["name","frameworkId","codeUrl","startup","startupType","dataUrl","output","volumeSize","instance","resourcePoolType"]
 }

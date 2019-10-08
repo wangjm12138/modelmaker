@@ -39,9 +39,12 @@
 				"type": "string",
 				"pattern": "^s3://"
 		},
-		"resourceId": {
-				"type": "number"
-		},
+        "resourceId": {
+            "anyOf": [
+                {"type": "number"},
+                {"type": "null"}
+            ]
+        },
 		"volumeSize": {
 				"type": "number",
 				"minimum": 1,
@@ -66,6 +69,63 @@
 					{"type": "number"}
 				]
 		},
+        "customResource": {
+                "anyOf": [
+                    {"type": "object",
+                    "properties": {
+                        "cpu": {
+                            "anyOf": [
+                                {"type": "number"},
+                                {"type": "null"}
+                            ]
+                        },
+                        "memory": {
+                            "anyOf": [
+                                {"type": "number"},
+                                {"type": "null"}
+                            ]
+                        },
+                        "gpuModel": {
+                            "anyOf": [
+                                {"type": "string"},
+                                {"type": "null"}
+                            ]
+                        },
+                        "gpuCount": {
+                            "anyOf": [
+                                {"type": "number"},
+                                {"type": "null"}
+                            ]
+                        },
+                        "requestCpu": {
+                            "anyOf": [
+                                {"type": "null"},
+                                {"type": "number"}
+                            ]
+                        },
+                        "requestMemory": {
+                            "anyOf": [
+                                {"type": "number"},
+                                {"type": "null"}
+                            ]
+                        },
+                        "shareGpu": {
+                            "anyOf": [
+                                {"type": "number"},
+                                {"type": "null"}
+                            ]
+                        },
+                        "gpuz": {
+                            "anyOf": [
+                                {"type": "number"},
+                                {"type": "null"}
+                            ]
+                        }
+                    },
+                    "additionalProperties": false},
+                    {"type": "null"}
+                ]
+        },
 		"description": {
 				"anyOf" :[
 					{"type": "null"},
@@ -76,5 +136,5 @@
 				]
 		}
     },
-	"required": ["name","algorithmId","dataUrl","output","resourceId","volumeSize","instance"]
+	"required": ["name","algorithmId","dataUrl","output","volumeSize","instance"]
 }
