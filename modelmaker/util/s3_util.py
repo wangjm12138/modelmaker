@@ -6,22 +6,23 @@ import logging
 import os
 import shutil
 import hashlib
+import random
 
 logging.basicConfig()
 LOGGER = logging.getLogger('s3')
 LOGGER.setLevel(logging.DEBUG)
 
 class ProgressPercentage(object):
-    def __init__(self,file_size,filename):
-        self._filename = filename
-        self._file_size = int(file_size)
-        self._seen_so_far = 0
-    def __call__(self, bytes_amount):
-        # To simplify, assume this is hooked up to a single filename
-        self._seen_so_far += bytes_amount
-        percentage = (self._seen_so_far / self._file_size) * 100
-        sys.stdout.write("\r%s  %s / %s  (%.2f%%)" % (self._filename, self._seen_so_far, self._file_size,percentage))
-        sys.stdout.flush()
+	def __init__(self,file_size,filename):
+		self._filename = filename
+		self._file_size = int(file_size)
+		self._seen_so_far = 0
+	def __call__(self, bytes_amount):
+		# To simplify, assume this is hooked up to a single filename
+		self._seen_so_far += bytes_amount
+		percentage = (self._seen_so_far / self._file_size) * 100
+		sys.stdout.write("\r%s  %s / %s  (%.2f%%)" % (self._filename, self._seen_so_far, self._file_size,percentage))
+		sys.stdout.flush()
 
 class WCS():
 	"""
@@ -152,6 +153,46 @@ class WCS():
 		h.update(d)
 		result = h.hexdigest()
 		return result
+
+	def calculate_local_md5_content(self,content):
+		h = hashlib.md5()
+		h.update(content)
+		result = h.hexdigest()
+		return result
+
+	def download_object_v2(self, bucket_path, local_file_name):
+		"""download s3 file to your local file
+			if local path has existed the file, then it will be overwritten
+		"""
+		try:
+			bucket_path_split = bucket_path.split('/',1)
+			bucket_name = bucket_path_split[0]
+			object_name = bucket_path_split[1]
+			remote_object = self.s3.Object(bucket_name,object_name)
+			remote_etag = eval(remote_object.e_tag)
+			remote_size = remote_object.content_length
+			#print(bucket_name,object_name,local_file_name)
+			if os.path.exists(local_file_name):
+				file_size = os.path.getsize(local_file_name)
+				local_md5 = self.calculate_local_md5(local_file_name)
+				#print(local_file_name,file_size,remote_size)
+				if file_size < remote_size:
+					range_str="bytes=%s-%s"%(str(file_size),str(remote_size))
+					remote_req = self.client.get_object(Bucket=bucket_name,Key=object_name,Range=range_str)
+					remote_content = remote_req['Body'].read()
+					with open(local_file_name, 'rb') as file_obj:
+						local_content = file_obj.read()
+					final_content = local_content + remote_content
+					local_etag = self.calculate_local_md5_content(final_content)
+					if local_etag == remote_etag:
+						with open(local_file_name, 'ab') as file_obj:
+							file_obj.write(remote_content)
+					else:
+						LOGGER.info("Loal file is different remote file, cannot resume from break-point")
+			else:
+				self.client.download_file(Bucket=bucket_name, Key=object_name, Filename=local_file_name,Callback=ProgressPercentage(remote_object.content_length,local_file_name))
+		except Exception as e:
+			raise Exception("Download file from S3 failed! ", e)
 
 	def download_object(self, bucket_path, local_file_path):
 		"""download S3 file to your local file
