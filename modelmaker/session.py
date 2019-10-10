@@ -208,6 +208,16 @@ class Session(object):
 			#bucket_path = ai-team/edfg/a.txt, path='./download'
 			self.s3_client.download_object(bucket_path=bucket_path, local_file_path=path)
 
+	def download_file(self, bucket_path, local_file_name):
+		if os.path.isdir(local_file_name) == True:
+			raise Exception("Downlaod filename is dir!")
+		is_directory = bucket_path.endswith('/')
+		#bucket_path = self.s3_client.check_bucket_path(bucket_path)
+		if is_directory:
+			raise Exception("Only support download file!")
+		else:
+			self.s3_client.download_object_v2(bucket_path=bucket_path, local_file_name=local_file_name)
+
 	#仅支持一层层创建,bucket_path以'/'结尾
 	def create_directory(self, bucket_path, directory):
 		bucket, key = self.s3_client.check_bucket_path(bucket_path)

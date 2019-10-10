@@ -38,6 +38,7 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 		self.log_id = 0
 		self.last_time = 0
 		self.last_nan = 0
+		self.isFlowInput = 0
 
 	def _prepare_for_training(self, job_name=None):
 		if job_name is not None:
@@ -46,11 +47,13 @@ class EstimatorBase(with_metaclass(ABCMeta, object)):
 			 raise ValueError('job name is needed for training')
 		return self.job_name
 
-	def fit(self, inputs=None, wait=False, logs=False, job_name=None):
+	def fit(self, inputs=None, wait=False, logs=False, flow_input=False, job_name=None):
 		"""Train a model using the input training dataset.
 		"""
 		starttime = datetime.now()
 		job_name = self._prepare_for_training(job_name=job_name)
+		if flow_input == True:
+			self.isFlowInput = 1
 
 #		if inputs is None:
 #			raise ValueError('Input data is needed for training')
@@ -480,6 +483,7 @@ class _TrainingJob():
 		_config = {}
 		_config['name'] = estimator.job_name
 		_config['type'] = estimator.framework_type
+		_config['isFlowInput'] = estimator.isFlowInput
 		## environment check
 		if estimator.train_instance_count is None:
 			raise ValueError("train_instance_count must set!")
