@@ -184,7 +184,7 @@ class Session(object):
 			if not os.path.exists(path):
 				raise Exception("Path " + path + " does not exist!")
 			if os.path.isdir(path):
-				self.s3_client.put_directory(bucket=bucket, key=key, bucket_path=bucket_path, local_directory=path)
+				self.s3_client.upload_directory(bucket=bucket, key=key, bucket_path=bucket_path, local_directory=path)
 			elif os.path.isfile(path):
 				#self.s3_client.put_object(bucket=bucket, key=key, bucket_path=bucket_path, local_file_path=path)
 				self.s3_client.upload_object(bucket=bucket, key=key, bucket_path=bucket_path, local_file_path=path)
